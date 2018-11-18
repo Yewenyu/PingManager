@@ -139,6 +139,10 @@ class NewGBPing: GBPing {
         case EchoRequest = 8
         case EchoReply   = 0
     }
+    enum kICMPv6Type : UInt8{
+        case EchoRequest = 128
+        case EchoReply   = 129
+    }
     func isValidPing4ResponsePacket(_ packet : Data) -> Bool{
         var packet = packet
         var result = false
@@ -329,6 +333,28 @@ class NewGBPing: GBPing {
     
         return Data(bytes: tempBuffer) as NSData
     }
+    func pingPacketWithType(_ type: UInt8, _ payload:NSData ,_ requiresChecksum:Bool)  -> NSData{
+        var packet: NSMutableData
+        var icmpPtr : UnsafeMutablePointer<ICMPHeader>
+        
+        packet = NSMutableData(length: MemoryLayout<ICMPHeader>.size + payload.length)!
+    
+        icmpPtr = packet.mutableBytes.bindMemory(to: ICMPHeader.self, capacity: packet.length)
+        icmpPtr.pointee.type = type
+        icmpPtr.pointee.code = 0
+        icmpPtr.pointee.checksum = 0
+        icmpPtr.pointee.identifier  = CFSwapInt16(self.identifier)
+        icmpPtr.pointee.sequenceNumber = CFSwapInt16(UInt16(self.nextSequenceNumber))
+        memcpy(&icmpPtr[1], payload.bytes, payload.length);
+        if requiresChecksum {
+            // The IP checksum routine returns a 16-bit number that's already in correct byte order
+            // (due to wacky 1's complement maths), so we just put it into the packet as a 16-bit unit.
+            
+            icmpPtr.pointee.checksum = COperation.in_cksum(packet.bytes, bufferLen: packet.length)
+        }
+        return packet
+    
+    }
     func send123(){
         if self.isPinging {
     
@@ -336,61 +362,66 @@ class NewGBPing: GBPing {
             var packet: NSData
             var bytesSent:ssize_t
     
-    // Construct the ping packet.
-    let payload = self.generateDataWithLength(length: self.payloadSize)
-    
-    let hostAddressFamily = self.hostAddressFamily
-    switch (hostAddressFamily) {
-    case AF_INET: {
-    packet = [self pingPacketWithType:kICMPv4TypeEchoRequest payload:payload requiresChecksum:YES];
-    } break;
-    case AF_INET6: {
-    packet = [self pingPacketWithType:kICMPv6TypeEchoRequest payload:payload requiresChecksum:NO];
-    } break;
-    default: {
-    assert(NO);
-    } break;
-    }
+            // Construct the ping packet.
+            let payload = self.generateDataWithLength(length: self.payloadSize)
+            
+            let hostAddressFamily = self.hostAddressFamily
+            switch hostAddressFamily{
+            case sa_family_t(AF_INET):
+                packet = self.pingPacketWithType(kICMPv4Type.EchoRequest.rawValue, payload, true)
+                break
+            case sa_family_t(AF_INET6):
+                packet = pingPacketWithType(kICMPv6Type.EchoRequest.rawValue, payload, true)
+                break
+                
+            default:
+                break
+            }
     
     // this is our ping summary
-    GBPingSummary *newPingSummary = [GBPingSummary new];
+    let newPingSummary = GBPingSummary()
     
     // Send the packet.
-    if (self.socket == 0) {
-    bytesSent = -1;
-    err = EBADF;
-    }
-    else {
+    if self.socket == 0{
+        bytesSent = -1
+        err = Int(EBADF)
+    }else{
     
     //record the send date
-    NSDate *sendDate = [NSDate date];
+    let sendDate = Date()
     
     //construct ping summary, as much as it can
-    newPingSummary.sequenceNumber = self.nextSequenceNumber;
-    newPingSummary.host = self.host;
-    newPingSummary.sendDate = sendDate;
-    newPingSummary.ttl = self.ttl;
-    newPingSummary.payloadSize = self.payloadSize;
-    newPingSummary.status = GBPingStatusPending;
+    newPingSummary.sequenceNumber = self.nextSequenceNumber
+    newPingSummary.host = self.host
+    newPingSummary.sendDate = sendDate
+    newPingSummary.ttl = self.ttl
+    newPingSummary.payloadSize = self.payloadSize
+    newPingSummary.status = GBPingStatusPending
     
     //add it to pending pings
-    NSNumber *key = @(self.nextSequenceNumber);
-    self.pendingPings[key] = newPingSummary;
+    let key = NSNumber(value: self.nextSequenceNumber)
+    self.pendingPings[key] = newPingSummary
     
     //increment sequence number
-    self.nextSequenceNumber += 1;
+    self.nextSequenceNumber += 1
     
     //we create a copy, this one will be passed out to other threads
-    GBPingSummary *pingSummaryCopy = [newPingSummary copy];
+    let pingSummaryCopy = newPingSummary.copy() as? GBPingSummary
     
     //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.timeout + kPendingPingsCleanupGrace) * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-    //remove the ping from the pending list
-    [self.pendingPings removeObjectForKey:key];
-    });
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
+            self.pendingPings.removeObject(forKey: key)
+        }
+    
     
     //add a timeout timer
     //add a timeout timer
+        let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
+            newPingSummary.status = GBPingStatusFail
+            DispatchQueue.main.async {
+                self.delegate?.ping?(self, didTimeoutWith: pingSummaryCopy!)
+            }
+        }), selector: <#T##Selector#>, userInfo: <#T##Any?#>, repeats: <#T##Bool#>)
     NSTimer *timeoutTimer = [NSTimer scheduledTimerWithTimeInterval:self.timeout
     target:[NSBlockOperation blockOperationWithBlock:^{
     
