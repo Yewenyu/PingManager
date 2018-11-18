@@ -359,7 +359,7 @@ class NewGBPing: GBPing {
         if self.isPinging {
     
             var err :Int
-            var packet: NSData
+            var packet: NSData = NSData()
             var bytesSent:ssize_t
     
             // Construct the ping packet.
@@ -378,128 +378,82 @@ class NewGBPing: GBPing {
                 break
             }
     
-    // this is our ping summary
-    let newPingSummary = GBPingSummary()
-    
-    // Send the packet.
-    if self.socket == 0{
-        bytesSent = -1
-        err = Int(EBADF)
-    }else{
-    
-    //record the send date
-    let sendDate = Date()
-    
-    //construct ping summary, as much as it can
-    newPingSummary.sequenceNumber = self.nextSequenceNumber
-    newPingSummary.host = self.host
-    newPingSummary.sendDate = sendDate
-    newPingSummary.ttl = self.ttl
-    newPingSummary.payloadSize = self.payloadSize
-    newPingSummary.status = GBPingStatusPending
-    
-    //add it to pending pings
-    let key = NSNumber(value: self.nextSequenceNumber)
-    self.pendingPings[key] = newPingSummary
-    
-    //increment sequence number
-    self.nextSequenceNumber += 1
-    
-    //we create a copy, this one will be passed out to other threads
-    let pingSummaryCopy = newPingSummary.copy() as? GBPingSummary
-    
-    //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
-            self.pendingPings.removeObject(forKey: key)
-        }
-    
-    
-    //add a timeout timer
-    //add a timeout timer
-        let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
-            newPingSummary.status = GBPingStatusFail
-            DispatchQueue.main.async {
-                self.delegate?.ping?(self, didTimeoutWith: pingSummaryCopy!)
+            let newPingSummary = GBPingSummary()
+            
+            // Send the packet.
+            if self.socket == 0{
+                bytesSent = -1
+                err = Int(EBADF)
+            }else{
+                
+                //record the send date
+                let sendDate = Date()
+                
+                //construct ping summary, as much as it can
+                newPingSummary.sequenceNumber = self.nextSequenceNumber
+                newPingSummary.host = self.host
+                newPingSummary.sendDate = sendDate
+                newPingSummary.ttl = self.ttl
+                newPingSummary.payloadSize = self.payloadSize
+                newPingSummary.status = GBPingStatusPending
+                
+                //add it to pending pings
+                let key = NSNumber(value: self.nextSequenceNumber)
+                self.pendingPings[key] = newPingSummary
+                
+                //increment sequence number
+                self.nextSequenceNumber += 1
+                
+                //we create a copy, this one will be passed out to other threads
+                let pingSummaryCopy = newPingSummary.copy() as? GBPingSummary
+                
+                //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
+                    self.pendingPings.removeObject(forKey: key)
+                }
+                
+                
+                //add a timeout timer
+                //add a timeout timer
+                let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
+                    newPingSummary.status = GBPingStatusFail
+                    DispatchQueue.main.async {
+                        self.delegate?.ping?(self, didTimeoutWith: pingSummaryCopy!)
+                    }
+                    self.timeoutTimers.removeObject(forKey: key)
+                }), selector: #selector(BlockOperation.main), userInfo: nil, repeats: false)
+                RunLoop.main.add(timeoutTimer, forMode: .commonModes)
+                
+                self.timeoutTimers[key] = timeoutTimer
+                //keep a local ref to it
+                self.delegate?.ping?(self, didSendPingWith: pingSummaryCopy!)
+                let hostAddress = self.hostAddress as NSData
+                bytesSent = sendto(self.socket, packet.bytes, packet.length, 0, hostAddress.bytes.bindMemory(to: sockaddr.self, capacity: hostAddress.length), socklen_t(hostAddress.length))
+                err = 0
+                if bytesSent < 0 {
+                    err = Int(errno)
+                }
+                if bytesSent > 0,Int(bytesSent) == packet.length {
+                    //noop, we already notified delegate about sending of the ping
+                }else{
+                    //complete the error
+                    if (err == 0) {
+                        err = Int(ENOBUFS)    // This is not a hugely descriptor error, alas.
+                    }
+                    
+                    //little log
+                    if (self.debug) {
+                        NSLog("GBPing: failed to send packet with error code: %d", err)
+                    }
+                    
+                    //change status
+                    newPingSummary.status = GBPingStatusFail
+                    let pingSummaryCopyAfterFailure = newPingSummary.copy() as? GBPingSummary
+                    
+                    self.delegate?.ping?(self, didFailToSendPingWith: newPingSummary, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
+                }
             }
-        }), selector: <#T##Selector#>, userInfo: <#T##Any?#>, repeats: <#T##Bool#>)
-    NSTimer *timeoutTimer = [NSTimer scheduledTimerWithTimeInterval:self.timeout
-    target:[NSBlockOperation blockOperationWithBlock:^{
-    
-    newPingSummary.status = GBPingStatusFail;
-    
-    //notify about the failure
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ping:didTimeoutWithSummary:)]) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-    [self.delegate ping:self didTimeoutWithSummary:pingSummaryCopy];
-    });
-    }
-    
-    //remove the timer itself from the timers list
-    //lm make sure that the timer list doesnt grow and these removals actually work... try logging the count of the timeoutTimers when stopping the pinger
-    [self.timeoutTimers removeObjectForKey:key];
-    }]
-    selector:@selector(main)
-    userInfo:nil
-    repeats:NO];
-    [[NSRunLoop mainRunLoop] addTimer:timeoutTimer forMode:NSRunLoopCommonModes];
-    
-    //keep a local ref to it
-    if (self.timeoutTimers) {
-    self.timeoutTimers[key] = timeoutTimer;
-    }
-    
-    //notify delegate about this
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ping:didSendPingWithSummary:)]) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-    [self.delegate ping:self didSendPingWithSummary:pingSummaryCopy];
-    });
-    }
-    
-    bytesSent = sendto(
-    self.socket,
-    [packet bytes],
-    [packet length],
-    0,
-    (struct sockaddr *) [self.hostAddress bytes],
-    (socklen_t) [self.hostAddress length]
-    );
-    err = 0;
-    if (bytesSent < 0) {
-    err = errno;
-    }
-    }
-    
-    // This is after the sending
-    
-    //successfully sent
-    if ((bytesSent > 0) && (((NSUInteger) bytesSent) == [packet length])) {
-    //noop, we already notified delegate about sending of the ping
-    }
-    //failed to send
-    else {
-    //complete the error
-    if (err == 0) {
-    err = ENOBUFS;          // This is not a hugely descriptor error, alas.
-    }
-    
-    //little log
-    if (self.debug) {
-    NSLog(@"GBPing: failed to send packet with error code: %d", err);
-    }
-    
-    //change status
-    newPingSummary.status = GBPingStatusFail;
-    
-    GBPingSummary *pingSummaryCopyAfterFailure = [newPingSummary copy];
-    
-    //notify delegate
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ping:didFailToSendPingWithSummary:error:)]) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-    [self.delegate ping:self didFailToSendPingWithSummary:pingSummaryCopyAfterFailure error:[NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil]];
-    });
-    }
-    }
-    }
+        }
     }
 }
 
