@@ -53,7 +53,7 @@ class NewGBPing: GBPing {
     override func send() {
         
         super.send()
-        
+//        send123()
         pingThreadCount += 1
 //        NSLog(pingThreadCount.description)
 //        self.listenOnce()
@@ -67,8 +67,8 @@ class NewGBPing: GBPing {
     }
     override func listenOnce() {
         
-        super.listenOnce()
-//        send11()
+//        super.listenOnce()
+        listenPing()
         
     }
     deinit {
@@ -214,7 +214,7 @@ class NewGBPing: GBPing {
     }
     
 
-    func send11(){
+    func listenPing(){
         var err : Int
         var ss = sockaddr_storage()
         let addr = UnsafeMutablePointer<sockaddr_storage>(&ss)
@@ -328,8 +328,8 @@ class NewGBPing: GBPing {
     
     func generateDataWithLength(length:UInt) -> NSData {
     //create a buffer full of 7's of specified length
-        var tempBuffer = [UInt8]()
-        memset(&tempBuffer, 7, Int(length))
+        let tempBuffer = [UInt8].init(repeating: 7, count: Int(length))
+//        memset(&tempBuffer, 7, Int(length))
     
         return Data(bytes: tempBuffer) as NSData
     }
@@ -450,7 +450,7 @@ class NewGBPing: GBPing {
                     newPingSummary.status = GBPingStatusFail
                     let pingSummaryCopyAfterFailure = newPingSummary.copy() as? GBPingSummary
                     
-                    self.delegate?.ping?(self, didFailToSendPingWith: newPingSummary, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
+                    self.delegate?.ping?(self, didFailToSendPingWith: pingSummaryCopyAfterFailure!, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
                 }
             }
         }
