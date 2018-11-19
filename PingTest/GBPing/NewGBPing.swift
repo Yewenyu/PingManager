@@ -89,7 +89,7 @@ class NewGBPing: GBPing {
             ipPtr = (packet as NSData).bytes.bindMemory(to: IPHeader.self, capacity:packet.count).pointee
             
             assert((ipPtr.versionAndHeaderLength & 0xF0) == 0x40)
-            assert(ipPtr.ptl == 1)
+            assert(ipPtr.protocol == 1)
             ipHeaderLength = Int((ipPtr.versionAndHeaderLength & 0x0F)) * MemoryLayout<UInt32>.size
             if packet.count >= ipHeaderLength + MemoryLayout<ICMPHeader>.size{
                 result = UInt(ipHeaderLength)
@@ -103,8 +103,11 @@ class NewGBPing: GBPing {
         
         icmpHeaderOffset = self.icmp4HeaderOffsetInPacket(packet)
         if icmpHeaderOffset != NSNotFound {
-            let bytes = (packet as NSData).bytes
-            result = bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count).pointee
+            let uint8Bytes = (packet as NSData).bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
+            
+            let bytes = UnsafeRawPointer(uint8Bytes).bindMemory(to: ICMPHeader.self, capacity: packet.count - Int(icmpHeaderOffset))
+            
+            result = bytes.pointee
         }
         return result
     }
@@ -147,27 +150,28 @@ class NewGBPing: GBPing {
         var packet = packet
         var result = false
         var icmpHeaderOffset : UInt
-        var icmpPtr : ICMPHeader
+        var icmpPtr : UnsafeMutablePointer<ICMPHeader>
         var receivedChecksum:UInt16
         var calculatedChecksum:UInt16
         
         icmpHeaderOffset = NewGBPing.icmp4HeaderOffsetInPacket(packet)
     
         if icmpHeaderOffset != NSNotFound{
-            var pointer = (packet as NSData).bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count)
-            pointer = pointer + Int(icmpHeaderOffset)
-            icmpPtr = pointer.pointee
+            let uInt8poiner = (packet as NSData).bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
+            let pointer = UnsafeMutableRawPointer(mutating: uInt8poiner).bindMemory(to: ICMPHeader.self, capacity: packet.count - Int(icmpHeaderOffset))
+        
+            icmpPtr = pointer
 //    icmpPtr = (struct ICMPHeader *) (((uint8_t *)[packet mutableBytes]) + icmpHeaderOffset);
-            receivedChecksum = icmpPtr.checksum
-            icmpPtr.checksum  = 0
-            calculatedChecksum = COperation.in_cksum(&icmpPtr, bufferLen: packet.count - Int(icmpHeaderOffset))
-            icmpPtr.checksum  = receivedChecksum
+            receivedChecksum = icmpPtr.pointee.checksum
+            icmpPtr.pointee.checksum  = 0
+            calculatedChecksum = COperation.in_cksum(icmpPtr, bufferLen: packet.count - Int(icmpHeaderOffset))
+            icmpPtr.pointee.checksum  = receivedChecksum
     
             if receivedChecksum == calculatedChecksum{
-                if icmpPtr.type == kICMPv4Type.EchoReply.rawValue, icmpPtr.code == 0 {
+                if icmpPtr.pointee.type == kICMPv4Type.EchoReply.rawValue, icmpPtr.pointee.code == 0 {
                     
-                    if CFSwapInt16(icmpPtr.identifier) == self.identifier  {
-                        if CFSwapInt16(icmpPtr.sequenceNumber) < self.nextSequenceNumber{
+                    if CFSwapInt16(icmpPtr.pointee.identifier) == self.identifier  {
+                        if CFSwapInt16(icmpPtr.pointee.sequenceNumber) < self.nextSequenceNumber{
                             result = true
                         }
                     }

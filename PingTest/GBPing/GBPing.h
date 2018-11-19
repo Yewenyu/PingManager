@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 
 #import "GBPingSummary.h"
+#import "ICMPHeader.h"
 
 
 @class GBPingSummary;
