@@ -52,8 +52,8 @@ class NewGBPing: GBPing {
     
     override func send() {
         
-        super.send()
-//        send123()
+//        super.send()
+        sendPacket()
         pingThreadCount += 1
 //        NSLog(pingThreadCount.description)
 //        self.listenOnce()
@@ -68,7 +68,7 @@ class NewGBPing: GBPing {
     override func listenOnce() {
         
 //        super.listenOnce()
-        listenPing()
+        listenPacket()
         
     }
     deinit {
@@ -89,7 +89,7 @@ class NewGBPing: GBPing {
             ipPtr = (packet as NSData).bytes.bindMemory(to: IPHeader.self, capacity:packet.count).pointee
             
             assert((ipPtr.versionAndHeaderLength & 0xF0) == 0x40)
-            assert(ipPtr.protocol == 1)
+            assert(ipPtr.ptl == 1)
             ipHeaderLength = Int((ipPtr.versionAndHeaderLength & 0x0F)) * MemoryLayout<UInt32>.size
             if packet.count >= ipHeaderLength + MemoryLayout<ICMPHeader>.size{
                 result = UInt(ipHeaderLength)
@@ -218,7 +218,7 @@ class NewGBPing: GBPing {
     }
     
 
-    func listenPing(){
+    func listenPacket(){
         var err : Int
         var ss = sockaddr_storage()
         let addr = UnsafeMutablePointer<sockaddr_storage>(&ss)
@@ -359,7 +359,7 @@ class NewGBPing: GBPing {
         return packet
     
     }
-    func send123(){
+    func sendPacket(){
         if self.isPinging {
     
             var err :Int
