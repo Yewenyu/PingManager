@@ -32,3 +32,44 @@ struct ICMPHeader {
     // data...
 }
 
+
+func in_cksum(_ buffer:UnsafeRawPointer, _ bufferLen:size_t) -> UInt16
+    // This is the standard BSD checksum code, modified to use modern types.
+{
+    var bytesLeft : size_t
+    var sum : UInt32
+    var cursor = buffer.bindMemory(to: UInt16.self, capacity: bufferLen)
+    var answer : UInt16
+    
+    bytesLeft = bufferLen
+    sum = 0
+    
+    
+    /*
+     * Our algorithm is simple, using a 32 bit accumulator (sum), we add
+     * sequential 16 bit words to it, and at the end, fold back all the
+     * carry bits from the top 16 bits into the lower 16 bits.
+     */
+    while bytesLeft > 1 {
+        sum += UInt32(cursor.pointee)
+        cursor += 1
+        bytesLeft -= 2;
+    }
+    
+    /* mop up an odd byte, if necessary */
+    if bytesLeft == 1{
+        let uc = UnsafeMutablePointer<UInt8>.init(bitPattern: MemoryLayout<UInt8>.size * 2)
+        uc?[0] = UInt8(cursor.pointee)
+        uc?[1] = 0
+        let us = UnsafeRawPointer(uc)!.bindMemory(to: UInt16.self, capacity: MemoryLayout<UInt16>.size).pointee
+        sum += UInt32(us)
+    }
+    
+    /* add back carry outs from top 16 bits to low 16 bits */
+    sum = (sum >> 16) + (sum & 0xffff)   /* add hi 16 to low 16 */
+    sum += (sum >> 16)          /* add carry */
+    answer = UInt16(~sum)  /* truncate to 16 bits */
+    
+    return answer;
+}
+

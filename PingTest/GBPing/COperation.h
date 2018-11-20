@@ -8,7 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
+union SchroedingersCat {
+    int isAlive;
+    UInt32 isDead;
+};
 NS_ASSUME_NONNULL_BEGIN
+
 
 @interface COperation : NSObject
 +(uint16_t)In_cksum:(const void *)buffer bufferLen: (size_t)bufferLen;
