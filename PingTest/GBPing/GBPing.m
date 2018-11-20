@@ -271,14 +271,14 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         int err = 0;
         switch (self.hostAddressFamily) {
             case AF_INET: {
-                self.socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
-                if (self.socket < 0) {
+                self.socketNum = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+                if (self.socketNum < 0) {
                     err = errno;
                 }
             } break;
             case AF_INET6: {
-                self.socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6);
-                if (self.socket < 0) {
+                self.socketNum = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6);
+                if (self.socketNum < 0) {
                     err = errno;
                 }
             } break;
@@ -302,7 +302,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         //set ttl on the socket
         if (self.ttl) {
             u_char ttlForSockOpt = (u_char)self.ttl;
-            setsockopt(self.socket, IPPROTO_IP, IP_TTL, &ttlForSockOpt, sizeof(NSUInteger));
+            setsockopt(self.socketNum, IPPROTO_IP, IP_TTL, &ttlForSockOpt, sizeof(NSUInteger));
         }
         
         //we are ready now
@@ -496,7 +496,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
     
     //read the data.
     addrLen = sizeof(addr);
-    bytesRead = recvfrom(self.socket, buffer, kBufferSize, 0, (struct sockaddr *)&addr, &addrLen);
+    bytesRead = recvfrom(self.socketNum, buffer, kBufferSize, 0, (struct sockaddr *)&addr, &addrLen);
     err = 0;
     if (bytesRead < 0) {
         err = errno;
@@ -649,7 +649,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
         GBPingSummary *newPingSummary = [GBPingSummary new];
         
         // Send the packet.
-        if (self.socket == 0) {
+        if (self.socketNum == 0) {
             bytesSent = -1;
             err = EBADF;
         }
@@ -718,7 +718,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             }
             
             bytesSent = sendto(
-                               self.socket,
+                               self.socketNum,
                                [packet bytes],
                                [packet length],
                                0,
@@ -772,9 +772,9 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
             self.isReady = NO;
             
             //destroy listenThread by closing socket (listenThread)
-            if (self.socket) {
-                close(self.socket);
-                self.socket = 0;
+            if (self.socketNum) {
+                close(self.socketNum);
+                self.socketNum = 0;
             }
             
             //destroy host
@@ -1051,9 +1051,9 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
     self.hostAddress = nil;
     
     //clean up socket to be sure
-    if (self.socket) {
-        close(self.socket);
-        self.socket = 0;
+    if (self.socketNum) {
+        close(self.socketNum);
+        self.socketNum = 0;
     }
 }
 

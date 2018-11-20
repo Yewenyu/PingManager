@@ -42,7 +42,7 @@ typedef void(^StartupCallback)(BOOL success, NSError * _Nullable error);
 @property (assign, nonatomic) uint16_t                  identifier;
 @property (assign, nonatomic) NSUInteger                nextSequenceNumber;
 @property (strong, nonatomic) NSMutableDictionary       *timeoutTimers;
-@property (assign, atomic) int                          socket;
+@property (assign, atomic) int                          socketNum;
 
 @property (strong, nonatomic) dispatch_queue_t          setupQueue;
 
