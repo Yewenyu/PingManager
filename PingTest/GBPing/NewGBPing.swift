@@ -164,7 +164,7 @@ class NewGBPing: GBPing {
 //    icmpPtr = (struct ICMPHeader *) (((uint8_t *)[packet mutableBytes]) + icmpHeaderOffset);
             receivedChecksum = icmpPtr.pointee.checksum
             icmpPtr.pointee.checksum  = 0
-            calculatedChecksum = COperation.in_cksum(icmpPtr, bufferLen: packet.count - Int(icmpHeaderOffset))
+            calculatedChecksum = in_cksum(icmpPtr, packet.count - Int(icmpHeaderOffset))
             icmpPtr.pointee.checksum  = receivedChecksum
     
             if receivedChecksum == calculatedChecksum{
@@ -354,7 +354,7 @@ class NewGBPing: GBPing {
             // The IP checksum routine returns a 16-bit number that's already in correct byte order
             // (due to wacky 1's complement maths), so we just put it into the packet as a 16-bit unit.
             
-            icmpPtr.pointee.checksum = COperation.in_cksum(packet.bytes, bufferLen: packet.length)
+            icmpPtr.pointee.checksum = in_cksum(packet.bytes, packet.length)
         }
         return packet
     

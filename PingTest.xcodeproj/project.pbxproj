@@ -15,7 +15,6 @@
 		27143B5721A0517200587976 /* GBPing.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4E21A0517200587976 /* GBPing.m */; };
 		27143B5821A0517200587976 /* NewGBPing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4F21A0517200587976 /* NewGBPing.swift */; };
 		27143B5921A0517200587976 /* ICMPHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5021A0517200587976 /* ICMPHeader.swift */; };
-		27143B5A21A0517200587976 /* COperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5121A0517200587976 /* COperation.m */; };
 		27143B5B21A0517200587976 /* GBPingSummary.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5321A0517200587976 /* GBPingSummary.m */; };
 /* End PBXBuildFile section */
 
@@ -31,12 +30,10 @@
 		27143B4E21A0517200587976 /* GBPing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GBPing.m; sourceTree = "<group>"; };
 		27143B4F21A0517200587976 /* NewGBPing.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewGBPing.swift; sourceTree = "<group>"; };
 		27143B5021A0517200587976 /* ICMPHeader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ICMPHeader.swift; sourceTree = "<group>"; };
-		27143B5121A0517200587976 /* COperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = COperation.m; sourceTree = "<group>"; };
 		27143B5221A0517200587976 /* GBPing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GBPing.h; sourceTree = "<group>"; };
 		27143B5321A0517200587976 /* GBPingSummary.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GBPingSummary.m; sourceTree = "<group>"; };
 		27143B5421A0517200587976 /* GBPing-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "GBPing-Prefix.pch"; sourceTree = "<group>"; };
 		27143B5521A0517200587976 /* ICMPHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ICMPHeader.h; sourceTree = "<group>"; };
-		27143B5621A0517200587976 /* COperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = COperation.h; sourceTree = "<group>"; };
 		27143B6021A0527800587976 /* PingTest-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PingTest-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -85,8 +82,6 @@
 		27143B4C21A0517200587976 /* GBPing */ = {
 			isa = PBXGroup;
 			children = (
-				27143B5621A0517200587976 /* COperation.h */,
-				27143B5121A0517200587976 /* COperation.m */,
 				27143B5421A0517200587976 /* GBPing-Prefix.pch */,
 				27143B5221A0517200587976 /* GBPing.h */,
 				27143B4E21A0517200587976 /* GBPing.m */,
@@ -176,7 +171,6 @@
 				27143B3D21A0507300587976 /* ViewController.swift in Sources */,
 				27143B3B21A0507300587976 /* AppDelegate.swift in Sources */,
 				27143B5821A0517200587976 /* NewGBPing.swift in Sources */,
-				27143B5A21A0517200587976 /* COperation.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

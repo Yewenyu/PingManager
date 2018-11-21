@@ -56,12 +56,20 @@ func in_cksum(_ buffer:UnsafeRawPointer, _ bufferLen:size_t) -> UInt16
         bytesLeft -= 2;
     }
     
+
     /* mop up an odd byte, if necessary */
     if bytesLeft == 1{
-        let uc = UnsafeMutablePointer<UInt8>.init(bitPattern: MemoryLayout<UInt8>.size * 2)
-        uc?[0] = UInt8(cursor.pointee)
-        uc?[1] = 0
-        let us = UnsafeRawPointer(uc)!.bindMemory(to: UInt16.self, capacity: MemoryLayout<UInt16>.size).pointee
+        var uc = withUnsafePointer(to: cursor) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout.size(ofValue: cursor.pointee)) {
+                Array(UnsafeBufferPointer(start: $0, count: MemoryLayout.size(ofValue: cursor.pointee)))
+            }
+        }
+        if uc.count > 2{
+            uc.removeLast(uc.count - 2)
+            uc[1] = 0
+        }
+        let us = UnsafeRawPointer(uc).bindMemory(to: UInt16.self, capacity: MemoryLayout<UInt16>.size).pointee
+        
         sum += UInt32(us)
     }
     
