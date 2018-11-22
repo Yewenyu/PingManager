@@ -14,13 +14,48 @@ let kDefaultTTL = 49
 let kDefaultPingPeriod : TimeInterval = 1.0
 let kDefaultTimeout : TimeInterval = 2.0
 
-class NewGBPing: GBPing {
+@objc protocol PingDelegate{
+    
+    
+    @objc optional func ping(_ pinger: NewGBPing, didFailWithError error: Error)
+    @objc optional func ping(_ pinger: NewGBPing, didTimeoutWith summary: GBPingSummary)
+    @objc optional func ping(_ pinger: NewGBPing, didSendPingWith summary: GBPingSummary)
+    @objc optional func ping(_ pinger: NewGBPing, didReceiveReplyWith summary: GBPingSummary)
+    @objc optional func ping(_ pinger: NewGBPing, didReceiveUnexpectedReplyWith summary: GBPingSummary)
+    @objc optional func ping(_ pinger: NewGBPing, didFailToSendPingWith summary: GBPingSummary, error: Error)
+    func stop(_ ping:NewGBPing)
+}
+
+class NewGBPing : NSObject {
 
     static var pingThreadCount = 0
     
     var pingThreadCount = 0
+    weak var delegate : PingDelegate?
+    
+    var host : String?
+    var pingPeriod : TimeInterval = 1
+    var timeout : TimeInterval = 1
+    var payloadSize : Int = -1
+    var ttl : UInt = 0
+    var isPinging : Bool = false
+    var isReady : Bool = false
+    var debug : Bool = false
+    var hostAddressString : String?
+    var pendingPings = [String:GBPingSummary]()
+    var hostAddress : Data?
+    var identifier : UInt16 = 0
+    var nextSequenceNumber : UInt = 0
+    var timeoutTimers = [String:Timer]()
+    var socketNum : Int32 = 0
+    var isStopped = true
+    
+   
+    
+
     override init() {
         super.init()
+        self.identifier = UInt16(arc4random())
         NewGBPing.pingThreadCount += 1
         pingThreadCount = NewGBPing.pingThreadCount
 //        self.isListenThread = false
@@ -39,10 +74,10 @@ class NewGBPing: GBPing {
         NewGBPingMannager.shared.zy_pings.append(self)
         
     }
-    override func startPinging() {
+     func startPinging() {
         self.isPinging = true
     }
-    override func stop() {
+     func stop() {
         if isPinging,let stop = self.delegate?.stop{
             self.isPinging = false
             stop(self)
@@ -50,7 +85,7 @@ class NewGBPing: GBPing {
         
     }
     
-    override func send() {
+     func send() {
         
 //        super.send()
         sendPacket()
@@ -65,7 +100,7 @@ class NewGBPing: GBPing {
         
         
     }
-    override func listenOnce() {
+     func listenOnce() {
         
 //        super.listenOnce()
         listenPacket()
@@ -86,7 +121,7 @@ class NewGBPing: GBPing {
         var ipHeaderLength : size_t
         result = UInt(NSNotFound)
         if packet.count >= MemoryLayout<IPHeader>.size + MemoryLayout<ICMPHeader>.size{
-            ipPtr = (packet as NSData).bytes.bindMemory(to: IPHeader.self, capacity:packet.count).pointee
+            ipPtr = packet.bytes.bindMemory(to: IPHeader.self, capacity:packet.count).pointee
             
             assert((ipPtr.versionAndHeaderLength & 0xF0) == 0x40)
             assert(ipPtr.ptl == 1)
@@ -103,7 +138,7 @@ class NewGBPing: GBPing {
         
         icmpHeaderOffset = self.icmp4HeaderOffsetInPacket(packet)
         if icmpHeaderOffset != NSNotFound {
-            let uint8Bytes = (packet as NSData).bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
+            let uint8Bytes = packet.bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
             
             let bytes = UnsafeRawPointer(uint8Bytes).bindMemory(to: ICMPHeader.self, capacity: packet.count - Int(icmpHeaderOffset))
             
@@ -115,7 +150,7 @@ class NewGBPing: GBPing {
     // Returns the source address of the IP packet
         var ipPtr : UnsafePointer<IPHeader>
         if packet.count >= MemoryLayout<IPHeader>.size{
-            ipPtr = (packet as NSData).bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
+            ipPtr = packet.bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
             
             let sourceAddress = ipPtr.pointee.sourceAddress//dont need to swap byte order those cuz theyre the smallest atomic unit (1 byte)
             let ipString = "\(sourceAddress.0).\(sourceAddress.1).\(sourceAddress.2).\(sourceAddress.3)"
@@ -129,8 +164,8 @@ class NewGBPing: GBPing {
     var hostAddressFamily : sa_family_t {
         get{
             var result : sa_family_t = sa_family_t(AF_UNSPEC)
-            if self.hostAddress.count >= MemoryLayout<sockaddr>.size{
-                result = (self.hostAddress as NSData).bytes.bindMemory(to: sockaddr.self, capacity: self.hostAddress.count).pointee.sa_family
+            if let hostAddress = self.hostAddress, hostAddress.count >= MemoryLayout<sockaddr>.size{
+                result = hostAddress.bytes.bindMemory(to: sockaddr.self, capacity: hostAddress.count).pointee.sa_family
             }
             return result
         }
@@ -157,7 +192,7 @@ class NewGBPing: GBPing {
         icmpHeaderOffset = NewGBPing.icmp4HeaderOffsetInPacket(packet)
     
         if icmpHeaderOffset != NSNotFound{
-            let uInt8poiner = (packet as NSData).bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
+            let uInt8poiner = packet.bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
             let pointer = UnsafeMutableRawPointer(mutating: uInt8poiner).bindMemory(to: ICMPHeader.self, capacity: packet.count - Int(icmpHeaderOffset))
         
             icmpPtr = pointer
@@ -188,7 +223,7 @@ class NewGBPing: GBPing {
         var icmpPtr : UnsafePointer<ICMPHeader>
 
         if packet.count >= MemoryLayout<ICMPHeader>.size {
-            icmpPtr = (packet as NSData).bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count)
+            icmpPtr = packet.bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count)
             if icmpPtr.pointee.type == kICMPv4Type.EchoReply.rawValue,icmpPtr.pointee.code == 0{
                 if CFSwapInt16(icmpPtr.pointee.identifier) == self.identifier{
                     if CFSwapInt16(icmpPtr.pointee.sequenceNumber) < self.nextSequenceNumber{
@@ -264,15 +299,15 @@ class NewGBPing: GBPing {
                 if sin.sin_family == AF_INET{
                     headerPointer = NewGBPing.icmp4InPacket(packet: packet)
                 } else {
-                    headerPointer = (packet as NSData).bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count).pointee
+                    headerPointer = packet.bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count).pointee
                     
                 }
                 
                 let segNo = CFSwapInt16(headerPointer!.sequenceNumber)
 //                NSUInteger seqNo = (NSUInteger)OSSwapBigToHostInt16(headerPointer->sequenceNumber);
-                let key = NSNumber(value: segNo)
+                let key = segNo.description
 //                NSNumber *key = @(seqNo);
-                let pingSummary =  (self.pendingPings[key] as? GBPingSummary)?.copy() as? GBPingSummary
+                let pingSummary =  (self.pendingPings[key]?.copy() as? GBPingSummary)
 //                GBPingSummary *pingSummary = [(GBPingSummary *)self.pendingPings[key] copy];
                 
                 if pingSummary != nil{
@@ -290,15 +325,15 @@ class NewGBPing: GBPing {
                             
                             if packet.count >= MemoryLayout<IPHeader>.size {
                                 
-                                ipPtr = (packet as NSData).bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
+                                ipPtr = packet.bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
                                 pingSummary?.ttl = UInt(ipPtr.pointee.timeToLive);
                             }
                         }
                         
                         pingSummary?.status = GBPingStatusSuccess
-                        let timer = self.timeoutTimers[key] as! Timer
-                        timer.invalidate()
-                        self.timeoutTimers.removeObject(forKey: key)
+                        let timer = self.timeoutTimers[key]
+                        timer?.invalidate()
+                        self.timeoutTimers.removeValue(forKey: key)
                         DispatchQueue.main.async {
                             self.delegate?.ping?(self, didReceiveReplyWith: pingSummary!)
                         }
@@ -330,18 +365,18 @@ class NewGBPing: GBPing {
         free(buffer)
     }
     
-    func generateDataWithLength(length:UInt) -> NSData {
+    func generateDataWithLength(length:Int) -> Data {
     //create a buffer full of 7's of specified length
-        let tempBuffer = [UInt8].init(repeating: 7, count: Int(length))
+        let tempBuffer = [UInt8].init(repeating: 7, count: length)
 //        memset(&tempBuffer, 7, Int(length))
     
-        return Data(bytes: tempBuffer) as NSData
+        return Data(bytes: tempBuffer)
     }
-    func pingPacketWithType(_ type: UInt8, _ payload:NSData ,_ requiresChecksum:Bool)  -> NSData{
+    func pingPacketWithType(_ type: UInt8, _ payload:Data ,_ requiresChecksum:Bool)  -> NSData{
         var packet: NSMutableData
         var icmpPtr : UnsafeMutablePointer<ICMPHeader>
         
-        packet = NSMutableData(length: MemoryLayout<ICMPHeader>.size + payload.length)!
+        packet = NSMutableData(length: MemoryLayout<ICMPHeader>.size + payload.count)!
     
         icmpPtr = packet.mutableBytes.bindMemory(to: ICMPHeader.self, capacity: packet.length)
         icmpPtr.pointee.type = type
@@ -349,7 +384,7 @@ class NewGBPing: GBPing {
         icmpPtr.pointee.checksum = 0
         icmpPtr.pointee.identifier  = CFSwapInt16(self.identifier)
         icmpPtr.pointee.sequenceNumber = CFSwapInt16(UInt16(self.nextSequenceNumber))
-        memcpy(&icmpPtr[1], payload.bytes, payload.length);
+        memcpy(&icmpPtr[1], payload.bytes, payload.count);
         if requiresChecksum {
             // The IP checksum routine returns a 16-bit number that's already in correct byte order
             // (due to wacky 1's complement maths), so we just put it into the packet as a 16-bit unit.
@@ -398,11 +433,11 @@ class NewGBPing: GBPing {
                 newPingSummary.host = self.host
                 newPingSummary.sendDate = sendDate
                 newPingSummary.ttl = self.ttl
-                newPingSummary.payloadSize = self.payloadSize
+                newPingSummary.payloadSize = UInt(self.payloadSize)
                 newPingSummary.status = GBPingStatusPending
                 
                 //add it to pending pings
-                let key = NSNumber(value: self.nextSequenceNumber)
+                let key = self.nextSequenceNumber.description
                 self.pendingPings[key] = newPingSummary
                 
                 //increment sequence number
@@ -413,7 +448,7 @@ class NewGBPing: GBPing {
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
-                    self.pendingPings.removeObject(forKey: key)
+                    self.pendingPings.removeValue(forKey: key)
                 }
                 
                 
@@ -424,15 +459,15 @@ class NewGBPing: GBPing {
                     DispatchQueue.main.async {
                         self.delegate?.ping?(self, didTimeoutWith: pingSummaryCopy!)
                     }
-                    self.timeoutTimers.removeObject(forKey: key)
+                    self.timeoutTimers.removeValue(forKey: key)
                 }), selector: #selector(BlockOperation.main), userInfo: nil, repeats: false)
                 RunLoop.main.add(timeoutTimer, forMode: .commonModes)
                 
                 self.timeoutTimers[key] = timeoutTimer
                 //keep a local ref to it
                 self.delegate?.ping?(self, didSendPingWith: pingSummaryCopy!)
-                let hostAddress = self.hostAddress as NSData
-                bytesSent = sendto(self.socketNum, packet.bytes, packet.length, 0, hostAddress.bytes.bindMemory(to: sockaddr.self, capacity: hostAddress.length), socklen_t(hostAddress.length))
+                let hostAddress = self.hostAddress!
+                bytesSent = sendto(self.socketNum, packet.bytes, packet.length, 0, hostAddress.bytes.bindMemory(to: sockaddr.self, capacity: hostAddress.count), socklen_t(hostAddress.count))
                 err = 0
                 if bytesSent < 0 {
                     err = Int(errno)
@@ -460,7 +495,7 @@ class NewGBPing: GBPing {
         }
     }
     
-    override func setup(_ callBack: @escaping (_ success:Bool,_ error:Error?)->Void) {
+    func setup(_ callBack: @escaping (_ success:Bool,_ error:Error?)->Void) {
     //error out of its already setup
         if self.isReady{
             if self.debug{
@@ -484,8 +519,6 @@ class NewGBPing: GBPing {
         //set up data structs
         self.nextSequenceNumber = 0
         
-        self.pendingPings = NSMutableDictionary()
-        self.timeoutTimers = NSMutableDictionary()
         NewGBPingMannager.shared.addDisposeBlock {
             var streamError = CFStreamError()
             var success : Bool
@@ -614,4 +647,13 @@ class NewGBPing: GBPing {
 
 }
 
+extension Data{
+    var bytes : UnsafeRawPointer{
+        get{
+//            let bytes = [UInt8](self)
+//            return UnsafeRawPointer(bytes)
+            return (self as NSData).bytes
+        }
+    }
+}
 
