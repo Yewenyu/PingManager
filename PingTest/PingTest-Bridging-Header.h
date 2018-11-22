@@ -10,6 +10,6 @@
 #define PingTest_Bridging_Header_h
 
 #import "GBPing.h"
-#import "COperation.h"
+
 
 #endif /* PingTest_Bridging_Header_h */
