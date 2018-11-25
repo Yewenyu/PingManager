@@ -18,11 +18,11 @@ let kDefaultTimeout : TimeInterval = 2.0
     
     
     @objc optional func ping(_ pinger: NewGBPing, didFailWithError error: Error)
-    @objc optional func ping(_ pinger: NewGBPing, didTimeoutWith summary: GBPingSummary)
-    @objc optional func ping(_ pinger: NewGBPing, didSendPingWith summary: GBPingSummary)
-    @objc optional func ping(_ pinger: NewGBPing, didReceiveReplyWith summary: GBPingSummary)
-    @objc optional func ping(_ pinger: NewGBPing, didReceiveUnexpectedReplyWith summary: GBPingSummary)
-    @objc optional func ping(_ pinger: NewGBPing, didFailToSendPingWith summary: GBPingSummary, error: Error)
+    @objc optional func ping(_ pinger: NewGBPing, didTimeoutWith result: PingResult)
+    @objc optional func ping(_ pinger: NewGBPing, didSendPingWith result: PingResult)
+    @objc optional func ping(_ pinger: NewGBPing, didReceiveReplyWith result: PingResult)
+    @objc optional func ping(_ pinger: NewGBPing, didReceiveUnexpectedReplyWith result: PingResult)
+    @objc optional func ping(_ pinger: NewGBPing, didFailToSendPingWith result: PingResult, error: Error)
     func stop(_ ping:NewGBPing)
 }
 
@@ -36,13 +36,13 @@ class NewGBPing : NSObject {
     var host : String?
     var pingPeriod : TimeInterval = 1
     var timeout : TimeInterval = 1
-    var payloadSize : Int = -1
+    var payloadSize : Int = kDefaultPayloadSize
     var ttl : UInt = 0
     var isPinging : Bool = false
     var isReady : Bool = false
     var debug : Bool = false
     var hostAddressString : String?
-    var pendingPings = [String:GBPingSummary]()
+    var pendingPings = [String:PingResult]()
     var hostAddress : Data?
     var identifier : UInt16 = 0
     var nextSequenceNumber : UInt = 0
@@ -55,7 +55,8 @@ class NewGBPing : NSObject {
 
     override init() {
         super.init()
-        self.identifier = UInt16(arc4random())
+    
+        self.identifier = UInt16(truncatingIfNeeded: arc4random())
         NewGBPing.pingThreadCount += 1
         pingThreadCount = NewGBPing.pingThreadCount
 //        self.isListenThread = false
@@ -292,7 +293,7 @@ class NewGBPing : NSObject {
                 
 //                assert((packet));
                 
-                //complete the ping summary
+                //complete the ping result
 //                const struct ICMPHeader *headerPointer;
                 var headerPointer : ICMPHeader?
                 
@@ -307,18 +308,18 @@ class NewGBPing : NSObject {
 //                NSUInteger seqNo = (NSUInteger)OSSwapBigToHostInt16(headerPointer->sequenceNumber);
                 let key = segNo.description
 //                NSNumber *key = @(seqNo);
-                let pingSummary =  (self.pendingPings[key]?.copy() as? GBPingSummary)
-//                GBPingSummary *pingSummary = [(GBPingSummary *)self.pendingPings[key] copy];
+                let pingResult =  self.pendingPings[key]?.copy()
+//                PingResult *pingResult = [(PingResult *)self.pendingPings[key] copy];
                 
-                if pingSummary != nil{
+                if pingResult != nil{
                     
                     if self.isValidPingResponsePacket(packet){
                         //override the source address (we might have sent to google.com and 172.123.213.192 replied)
-                        pingSummary!.receiveDate = receiveDate
+                        pingResult!.receiveDate = receiveDate
                         // IP can't be read from header for ICMPv6
                         if sin.sin_family == sa_family_t(AF_INET) {
                             
-                            pingSummary?.host = NewGBPing.sourceAddressInPacket(packet)
+                            pingResult?.host = NewGBPing.sourceAddressInPacket(packet)
                             
                             //set ttl from zy_response (different servers may respond with different ttls)
                             let ipPtr : UnsafePointer<IPHeader>
@@ -326,22 +327,22 @@ class NewGBPing : NSObject {
                             if packet.count >= MemoryLayout<IPHeader>.size {
                                 
                                 ipPtr = packet.bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
-                                pingSummary?.ttl = UInt(ipPtr.pointee.timeToLive);
+                                pingResult?.ttl = UInt(ipPtr.pointee.timeToLive);
                             }
                         }
                         
-                        pingSummary?.status = GBPingStatusSuccess
+                        pingResult?.pingStatus = .success
                         let timer = self.timeoutTimers[key]
                         timer?.invalidate()
                         self.timeoutTimers.removeValue(forKey: key)
                         DispatchQueue.main.async {
-                            self.delegate?.ping?(self, didReceiveReplyWith: pingSummary!)
+                            self.delegate?.ping?(self, didReceiveReplyWith: pingResult!)
                         }
                     }else {
-                        pingSummary?.status = GBPingStatusFail;
+                        pingResult?.pingStatus = .fail;
                         
                         DispatchQueue.main.async {
-                            self.delegate?.ping?(self, didReceiveUnexpectedReplyWith: pingSummary!)
+                            self.delegate?.ping?(self, didReceiveUnexpectedReplyWith: pingResult!)
                         }
                         
                     }
@@ -417,7 +418,7 @@ class NewGBPing : NSObject {
                 break
             }
     
-            let newPingSummary = GBPingSummary()
+            let newPingResult = PingResult()
             
             // Send the packet.
             if self.socketNum == 0{
@@ -428,23 +429,23 @@ class NewGBPing : NSObject {
                 //record the send date
                 let sendDate = Date()
                 
-                //construct ping summary, as much as it can
-                newPingSummary.sequenceNumber = self.nextSequenceNumber
-                newPingSummary.host = self.host
-                newPingSummary.sendDate = sendDate
-                newPingSummary.ttl = self.ttl
-                newPingSummary.payloadSize = UInt(self.payloadSize)
-                newPingSummary.status = GBPingStatusPending
+                //construct ping result, as much as it can
+                newPingResult.sequenceNumber = self.nextSequenceNumber
+                newPingResult.host = self.host
+                newPingResult.sendDate = sendDate
+                newPingResult.ttl = self.ttl
+                newPingResult.payloadSize = UInt(self.payloadSize)
+                newPingResult.pingStatus = .pending
                 
                 //add it to pending pings
                 let key = self.nextSequenceNumber.description
-                self.pendingPings[key] = newPingSummary
+                self.pendingPings[key] = newPingResult
                 
                 //increment sequence number
                 self.nextSequenceNumber += 1
                 
                 //we create a copy, this one will be passed out to other threads
-                let pingSummaryCopy = newPingSummary.copy() as? GBPingSummary
+                let pingResultCopy : PingResult = newPingResult.copy()
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
@@ -455,9 +456,9 @@ class NewGBPing : NSObject {
                 //add a timeout timer
                 //add a timeout timer
                 let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
-                    newPingSummary.status = GBPingStatusFail
+                    newPingResult.pingStatus = .fail
                     DispatchQueue.main.async {
-                        self.delegate?.ping?(self, didTimeoutWith: pingSummaryCopy!)
+                        self.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
                     }
                     self.timeoutTimers.removeValue(forKey: key)
                 }), selector: #selector(BlockOperation.main), userInfo: nil, repeats: false)
@@ -465,7 +466,7 @@ class NewGBPing : NSObject {
                 
                 self.timeoutTimers[key] = timeoutTimer
                 //keep a local ref to it
-                self.delegate?.ping?(self, didSendPingWith: pingSummaryCopy!)
+                self.delegate?.ping?(self, didSendPingWith: pingResultCopy)
                 let hostAddress = self.hostAddress!
                 bytesSent = sendto(self.socketNum, packet.bytes, packet.length, 0, hostAddress.bytes.bindMemory(to: sockaddr.self, capacity: hostAddress.count), socklen_t(hostAddress.count))
                 err = 0
@@ -486,10 +487,10 @@ class NewGBPing : NSObject {
                     }
                     
                     //change status
-                    newPingSummary.status = GBPingStatusFail
-                    let pingSummaryCopyAfterFailure = newPingSummary.copy() as? GBPingSummary
+                    newPingResult.pingStatus = .fail
+                    let pingReultCopyAfterFailure : PingResult = newPingResult.copy()
                     
-                    self.delegate?.ping?(self, didFailToSendPingWith: pingSummaryCopyAfterFailure!, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
+                    self.delegate?.ping?(self, didFailToSendPingWith: pingReultCopyAfterFailure, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
                 }
             }
         }

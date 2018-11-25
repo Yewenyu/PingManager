@@ -5,6 +5,7 @@
 //  Created by wenyu on 2018/11/17.
 //  Copyright © 2018年 ThreeTab. All rights reserved.
 //
+import Darwin
 
 struct IPHeader {
     var versionAndHeaderLength : UInt8
@@ -76,8 +77,9 @@ func in_cksum(_ buffer:UnsafeRawPointer, _ bufferLen:size_t) -> UInt16
     /* add back carry outs from top 16 bits to low 16 bits */
     sum = (sum >> 16) + (sum & 0xffff)   /* add hi 16 to low 16 */
     sum += (sum >> 16)          /* add carry */
-    answer = UInt16(~sum)  /* truncate to 16 bits */
+    answer = UInt16(truncatingIfNeeded: ~sum)  /* truncate to 16 bits */
     
     return answer;
 }
+
 

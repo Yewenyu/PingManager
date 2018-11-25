@@ -9,7 +9,7 @@
 #ifndef PingTest_Bridging_Header_h
 #define PingTest_Bridging_Header_h
 
-#import "GBPing.h"
+//#import "GBPing.h"
 
 
 #endif /* PingTest_Bridging_Header_h */

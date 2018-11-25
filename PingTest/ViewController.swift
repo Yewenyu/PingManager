@@ -13,7 +13,7 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        var ping = NewGBPing()
+        let ping = NewGBPing()
         ping.delegate = self
         ping.host = "www.baidu.com"
         ping.timeout = 1
@@ -29,9 +29,14 @@ class ViewController: UIViewController {
     }
 
 }
-extension UIViewController : GBPingDelegate{
-    public func ping(_ pinger: GBPing, didReceiveReplyWith summary: GBPingSummary) {
-        NSLog("\(summary.sendDate!.description)"+"\(summary.receiveDate!.description)")
+extension UIViewController : PingDelegate{
+    func stop(_ ping: NewGBPing) {
+        
     }
+    func ping(_ pinger: NewGBPing, didReceiveReplyWith result: PingResult) {
+        NSLog("\(result.sendDate!.description)"+"\(result.receiveDate!.description)")
+    }
+    
+    
 }
 

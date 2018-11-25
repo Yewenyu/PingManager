@@ -17,6 +17,7 @@
 		27143B5921A0517200587976 /* ICMPHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5021A0517200587976 /* ICMPHeader.swift */; };
 		27143B5B21A0517200587976 /* GBPingSummary.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5321A0517200587976 /* GBPingSummary.m */; };
 		27143BC921A64B1900587976 /* PingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143BC821A64B1900587976 /* PingManager.swift */; };
+		272ACF2521AA555400228B37 /* PingResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272ACF2421AA555400228B37 /* PingResult.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		27143B5521A0517200587976 /* ICMPHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ICMPHeader.h; sourceTree = "<group>"; };
 		27143B6021A0527800587976 /* PingTest-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PingTest-Bridging-Header.h"; sourceTree = "<group>"; };
 		27143BC821A64B1900587976 /* PingManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PingManager.swift; sourceTree = "<group>"; };
+		272ACF2421AA555400228B37 /* PingResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingResult.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 				27143B5321A0517200587976 /* GBPingSummary.m */,
 				27143B5521A0517200587976 /* ICMPHeader.h */,
 				27143B5021A0517200587976 /* ICMPHeader.swift */,
+				272ACF2421AA555400228B37 /* PingResult.swift */,
 				27143B4F21A0517200587976 /* NewGBPing.swift */,
 				27143BC821A64B1900587976 /* PingManager.swift */,
 			);
@@ -168,6 +171,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				272ACF2521AA555400228B37 /* PingResult.swift in Sources */,
 				27143BC921A64B1900587976 /* PingManager.swift in Sources */,
 				27143B5921A0517200587976 /* ICMPHeader.swift in Sources */,
 				27143B5B21A0517200587976 /* GBPingSummary.m in Sources */,
