@@ -13,16 +13,16 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        let ping = NewGBPing()
+        let ping = Ping()
         ping.delegate = self
         ping.host = "www.baidu.com"
         ping.timeout = 1
-        NewGBPingMannager.shared.setup {
-            NewGBPingMannager.shared.pingPeriod = 0.2
-            NewGBPingMannager.shared.startPing()
+        PingMannager.shared.setup {
+            PingMannager.shared.pingPeriod = 0.2
+            PingMannager.shared.startPing()
             DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + 1.4, execute: {
-                if NewGBPingMannager.shared.isPinging{
-                    NewGBPingMannager.shared.stopPing()
+                if PingMannager.shared.isPinging{
+                    PingMannager.shared.stopPing()
                 }
             })
         }
@@ -30,10 +30,10 @@ class ViewController: UIViewController {
 
 }
 extension UIViewController : PingDelegate{
-    func stop(_ ping: NewGBPing) {
+    func stop(_ ping: Ping) {
         
     }
-    func ping(_ pinger: NewGBPing, didReceiveReplyWith result: PingResult) {
+    func ping(_ pinger: Ping, didReceiveReplyWith result: PingResult) {
         NSLog("\(result.sendDate!.description)"+"\(result.receiveDate!.description)")
     }
     

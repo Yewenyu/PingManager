@@ -181,7 +181,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
     self.pendingPings = [[NSMutableDictionary alloc] init];
     self.timeoutTimers = [[NSMutableDictionary alloc] init];
     
-    [NewGBPingMannager.shared addDisposeBlock:^{
+    [PingMannager.shared addDisposeBlock:^{
         CFStreamError streamError;
         BOOL success;
         
@@ -537,7 +537,7 @@ static NSTimeInterval const kDefaultTimeout =           2.0;
                     if (sin->sin_family == AF_INET) {
                         pingSummary.host = [[self class] sourceAddressInPacket:packet];
                         
-                        //set ttl from zy_response (different servers may respond with different ttls)
+                        //set ttl from response (different servers may respond with different ttls)
                         const struct IPHeader *ipPtr;
                         if ([packet length] >= sizeof(IPHeader)) {
                             ipPtr = (const IPHeader *)[packet bytes];
@@ -915,7 +915,7 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
 }
 
 - (BOOL)isValidPing4ResponsePacket:(NSMutableData *)packet
-// Returns true if the packet looks like a valid ping zy_response packet destined
+// Returns true if the packet looks like a valid ping response packet destined
 // for us.
 {
     BOOL                result;
@@ -952,7 +952,7 @@ static uint16_t in_cksum(const void *buffer, size_t bufferLen)
 }
 
 - (BOOL)isValidPing6ResponsePacket:(NSMutableData *)packet
-// Returns true if the IPv6 packet looks like a valid ping zy_response packet destined
+// Returns true if the IPv6 packet looks like a valid ping response packet destined
 // for us.
 {
     BOOL                      result;

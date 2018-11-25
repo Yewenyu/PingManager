@@ -8,8 +8,8 @@
 
 import UIKit
 
-class NewGBPingMannager : NSObject{
-    @objc static let shared = NewGBPingMannager()
+class PingMannager : NSObject{
+    @objc static let shared = PingMannager()
     let readyQueue = DispatchQueue(label: "NewGBPingReadyQueue")
     let readyGroup = DispatchGroup()
     let disposeQueue = DispatchQueue(label: "NewGBPingDisposeQueue")
@@ -41,7 +41,7 @@ class NewGBPingMannager : NSObject{
     var sendThread : Thread?
     var listenThread :Thread?
     var disposeThread : Thread?
-    var zy_pings = [NewGBPing]()
+    var pings = [Ping]()
     var sendBlocks = [Any]()
     var listenBlocks = [Any]()
     var disposeBlocks = [Any]()
@@ -65,13 +65,13 @@ class NewGBPingMannager : NSObject{
     }
     func removeDisposeBlocksFirst(){
         disposeQueue.sync {
-            var zy_blocks = self.disposeBlocks
-            zy_blocks.removeFirst()
-            self.disposeBlocks = zy_blocks
+            var blocks = self.disposeBlocks
+            blocks.removeFirst()
+            self.disposeBlocks = blocks
         }
     }
     func setup(_ callBack:(()->())? = nil){
-        var zy_newPings = zy_pings
+        var newPings = pings
         if self.disposeThread == nil{
             self.disposeThread = Thread(target: self, selector: #selector(self.disposeAction), object: nil)
             self.disposeThread?.name = "disposeThread"
@@ -79,14 +79,14 @@ class NewGBPingMannager : NSObject{
             self.disposeThread?.start()
         }
         
-        for zy_ping in zy_pings{
+        for ping in pings{
             readyGroup.enter()
-            zy_ping.setup { (zy_success, zy_error) in
-                if zy_success{
-                    zy_ping.startPinging()
+            ping.setup { (success, error) in
+                if success{
+                    ping.startPinging()
                 }else{
-                    zy_newPings.removeAll(where: { (zy_delete) -> Bool in
-                        return zy_delete.host == zy_ping.host
+                    newPings.removeAll(where: { (delete) -> Bool in
+                        return delete.host == ping.host
                     })
                 }
                 
@@ -97,7 +97,7 @@ class NewGBPingMannager : NSObject{
         readyGroup.notify(queue: readyQueue) {
             self.isDispose = false
             self.disposeThread = nil
-            self.zy_pings = zy_newPings
+            self.pings = newPings
             callBack?()
         }
         
@@ -118,36 +118,38 @@ class NewGBPingMannager : NSObject{
         }
     }
     func stopPing(){
-        isPinging = false
-        self.sendThread = nil
-        self.listenThread = nil
-        self.disposeThread = nil
-        self.sendBlocks.removeAll()
-        self.listenBlocks.removeAll()
-        self.disposeBlocks.removeAll()
-        for zy_ping in zy_pings{
-            zy_ping.stop()
+        if isPinging{
+            isPinging = false
+            self.sendThread = nil
+            self.listenThread = nil
+            self.disposeThread = nil
+            self.sendBlocks.removeAll()
+            self.listenBlocks.removeAll()
+            self.disposeBlocks.removeAll()
+            for ping in pings{
+                ping.stop()
+            }
+            self.pings.removeAll()
         }
-        self.zy_pings.removeAll()
     }
     
     @objc private func sendAction(){
         autoreleasepool {
-            var zy_blocks = sendBlocks
-            while isPinging,zy_blocks.count > 0{
+            var blocks = sendBlocks
+            while isPinging,blocks.count > 0{
                 var i = 0
-                while i < zy_blocks.count{
-                    if let zy_block = zy_blocks[i] as? ()->(NewGBPing?){
-                        let zy_ping = zy_block()
-                        if zy_ping?.isPinging == false{
-                            zy_blocks.remove(at: i)
+                let runUntil = CFAbsoluteTimeGetCurrent() + self.pingPeriod;
+                while i < blocks.count{
+                    if let block = blocks[i] as? ()->(Ping?){
+                        let ping = block()
+                        if ping?.isPinging == false{
+                            blocks.remove(at: i)
+                            i -= 1
                         }
                     }
                     i += 1
                 }
-                //                let lastCount = Thread.getThreadsCount()
-                //                NSLog("Thread:"+lastCount.description)
-                let runUntil = CFAbsoluteTimeGetCurrent() + self.pingPeriod;
+                
                 var time : TimeInterval = 0;
                 while (runUntil > time) {
                     let runUntilDate = Date(timeIntervalSinceReferenceDate: runUntil)
@@ -159,16 +161,18 @@ class NewGBPingMannager : NSObject{
     }
     @objc private func listenAction(){
         autoreleasepool {
-            var zy_blocks = listenBlocks
-            while isPinging,zy_blocks.count > 0{
+            var blocks = listenBlocks
+            while isPinging,blocks.count > 0{
                 var i = 0
                 
-                while i < zy_blocks.count{
-                    if let zy_block = zy_blocks[i] as? ()->(NewGBPing?){
-                        let zy_ping = zy_block()
-                        if zy_ping?.isPinging == false{
-                            zy_blocks.remove(at: i)
+                while i < blocks.count{
+                    if let block = blocks[i] as? ()->(Ping?){
+                        let ping = block()
+                        if ping?.isPinging == false{
+                            blocks.remove(at: i)
+                             i -= 1
                         }
+                       
                     }
                     i += 1
                 }
@@ -179,9 +183,9 @@ class NewGBPingMannager : NSObject{
         autoreleasepool {
             while isDispose{
                 while self.getDisposeBlocks().count > 0{
-                    let zy_blocks = self.getDisposeBlocks()
-                    if let zy_block = zy_blocks.first as? ()->(){
-                        zy_block()
+                    let blocks = self.getDisposeBlocks()
+                    if let block = blocks.first as? ()->(){
+                        block()
                     }
                     self.removeDisposeBlocksFirst()
                 }
@@ -191,11 +195,7 @@ class NewGBPingMannager : NSObject{
 }
 
 extension Thread{
-    var sequenceNumber : Int{
-        get{
-            return self.value(forKeyPath: "private.seqNum") as? Int ?? 0
-        }
-    }
+    
     static func getThreadsCount() -> Int{
         var threadList : thread_array_t?
         var threadCount = mach_msg_type_number_t()

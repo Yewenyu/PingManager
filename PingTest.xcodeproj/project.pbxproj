@@ -13,7 +13,7 @@
 		27143B4221A0507C00587976 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 27143B4121A0507C00587976 /* Assets.xcassets */; };
 		27143B4521A0507C00587976 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27143B4321A0507C00587976 /* LaunchScreen.storyboard */; };
 		27143B5721A0517200587976 /* GBPing.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4E21A0517200587976 /* GBPing.m */; };
-		27143B5821A0517200587976 /* NewGBPing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4F21A0517200587976 /* NewGBPing.swift */; };
+		27143B5821A0517200587976 /* Ping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4F21A0517200587976 /* Ping.swift */; };
 		27143B5921A0517200587976 /* ICMPHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5021A0517200587976 /* ICMPHeader.swift */; };
 		27143B5B21A0517200587976 /* GBPingSummary.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5321A0517200587976 /* GBPingSummary.m */; };
 		27143BC921A64B1900587976 /* PingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143BC821A64B1900587976 /* PingManager.swift */; };
@@ -30,7 +30,7 @@
 		27143B4621A0507C00587976 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		27143B4D21A0517200587976 /* GBPingSummary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GBPingSummary.h; sourceTree = "<group>"; };
 		27143B4E21A0517200587976 /* GBPing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GBPing.m; sourceTree = "<group>"; };
-		27143B4F21A0517200587976 /* NewGBPing.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewGBPing.swift; sourceTree = "<group>"; };
+		27143B4F21A0517200587976 /* Ping.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Ping.swift; sourceTree = "<group>"; };
 		27143B5021A0517200587976 /* ICMPHeader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ICMPHeader.swift; sourceTree = "<group>"; };
 		27143B5221A0517200587976 /* GBPing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GBPing.h; sourceTree = "<group>"; };
 		27143B5321A0517200587976 /* GBPingSummary.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GBPingSummary.m; sourceTree = "<group>"; };
@@ -94,7 +94,7 @@
 				27143B5521A0517200587976 /* ICMPHeader.h */,
 				27143B5021A0517200587976 /* ICMPHeader.swift */,
 				272ACF2421AA555400228B37 /* PingResult.swift */,
-				27143B4F21A0517200587976 /* NewGBPing.swift */,
+				27143B4F21A0517200587976 /* Ping.swift */,
 				27143BC821A64B1900587976 /* PingManager.swift */,
 			);
 			path = GBPing;
@@ -178,7 +178,7 @@
 				27143B5721A0517200587976 /* GBPing.m in Sources */,
 				27143B3D21A0507300587976 /* ViewController.swift in Sources */,
 				27143B3B21A0507300587976 /* AppDelegate.swift in Sources */,
-				27143B5821A0517200587976 /* NewGBPing.swift in Sources */,
+				27143B5821A0517200587976 /* Ping.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

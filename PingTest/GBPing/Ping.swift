@@ -17,16 +17,16 @@ let kDefaultTimeout : TimeInterval = 2.0
 @objc protocol PingDelegate{
     
     
-    @objc optional func ping(_ pinger: NewGBPing, didFailWithError error: Error)
-    @objc optional func ping(_ pinger: NewGBPing, didTimeoutWith result: PingResult)
-    @objc optional func ping(_ pinger: NewGBPing, didSendPingWith result: PingResult)
-    @objc optional func ping(_ pinger: NewGBPing, didReceiveReplyWith result: PingResult)
-    @objc optional func ping(_ pinger: NewGBPing, didReceiveUnexpectedReplyWith result: PingResult)
-    @objc optional func ping(_ pinger: NewGBPing, didFailToSendPingWith result: PingResult, error: Error)
-    func stop(_ ping:NewGBPing)
+    @objc optional func ping(_ pinger: Ping, didFailWithError error: Error)
+    @objc optional func ping(_ pinger: Ping, didTimeoutWith result: PingResult)
+    @objc optional func ping(_ pinger: Ping, didSendPingWith result: PingResult)
+    @objc optional func ping(_ pinger: Ping, didReceiveReplyWith result: PingResult)
+    @objc optional func ping(_ pinger: Ping, didReceiveUnexpectedReplyWith result: PingResult)
+    @objc optional func ping(_ pinger: Ping, didFailToSendPingWith result: PingResult, error: Error)
+    func stop(_ ping:Ping)
 }
 
-class NewGBPing : NSObject {
+class Ping : NSObject {
 
     static var pingThreadCount = 0
     
@@ -57,22 +57,22 @@ class NewGBPing : NSObject {
         super.init()
     
         self.identifier = UInt16(truncatingIfNeeded: arc4random())
-        NewGBPing.pingThreadCount += 1
-        pingThreadCount = NewGBPing.pingThreadCount
+        Ping.pingThreadCount += 1
+        pingThreadCount = Ping.pingThreadCount
 //        self.isListenThread = false
         self.isPinging = true
-        weak var zy_ping = self
-        let sendBlock = { () -> NewGBPing? in
-            zy_ping?.send()
-            return zy_ping
+        weak var ping = self
+        let sendBlock = { () -> Ping? in
+            ping?.send()
+            return ping
         }
-        let listenBlock = { () -> NewGBPing? in
-            zy_ping?.listenOnce()
-            return zy_ping
+        let listenBlock = { () -> Ping? in
+            ping?.listenOnce()
+            return ping
         }
-        NewGBPingMannager.shared.sendBlocks.append(sendBlock)
-        NewGBPingMannager.shared.listenBlocks.append(listenBlock)
-        NewGBPingMannager.shared.zy_pings.append(self)
+        PingMannager.shared.sendBlocks.append(sendBlock)
+        PingMannager.shared.listenBlocks.append(listenBlock)
+        PingMannager.shared.pings.append(self)
         
     }
      func startPinging() {
@@ -109,7 +109,7 @@ class NewGBPing : NSObject {
     }
     deinit {
         
-        NewGBPing.pingThreadCount -= 1
+        Ping.pingThreadCount -= 1
         
     }
     let INET6_ADDRSTRLEN = 64
@@ -171,7 +171,7 @@ class NewGBPing : NSObject {
             return result
         }
     }
-    // Returns true if the packet looks like a valid ping zy_response packet destined
+    // Returns true if the packet looks like a valid ping response packet destined
     // for us.
     enum kICMPv4Type : UInt8{
  
@@ -190,7 +190,7 @@ class NewGBPing : NSObject {
         var receivedChecksum:UInt16
         var calculatedChecksum:UInt16
         
-        icmpHeaderOffset = NewGBPing.icmp4HeaderOffsetInPacket(packet)
+        icmpHeaderOffset = Ping.icmp4HeaderOffsetInPacket(packet)
     
         if icmpHeaderOffset != NSNotFound{
             let uInt8poiner = packet.bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
@@ -217,7 +217,7 @@ class NewGBPing : NSObject {
         return result
     }
     
-    // Returns true if the IPv6 packet looks like a valid ping zy_response packet destined
+    // Returns true if the IPv6 packet looks like a valid ping response packet destined
     // for us.
     func isValidPing6ResponsePacket(_ packet:Data)->Bool{
         var result = false
@@ -298,7 +298,7 @@ class NewGBPing : NSObject {
                 var headerPointer : ICMPHeader?
                 
                 if sin.sin_family == AF_INET{
-                    headerPointer = NewGBPing.icmp4InPacket(packet: packet)
+                    headerPointer = Ping.icmp4InPacket(packet: packet)
                 } else {
                     headerPointer = packet.bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count).pointee
                     
@@ -319,9 +319,9 @@ class NewGBPing : NSObject {
                         // IP can't be read from header for ICMPv6
                         if sin.sin_family == sa_family_t(AF_INET) {
                             
-                            pingResult?.host = NewGBPing.sourceAddressInPacket(packet)
+                            pingResult?.host = Ping.sourceAddressInPacket(packet)
                             
-                            //set ttl from zy_response (different servers may respond with different ttls)
+                            //set ttl from response (different servers may respond with different ttls)
                             let ipPtr : UnsafePointer<IPHeader>
                             
                             if packet.count >= MemoryLayout<IPHeader>.size {
@@ -520,7 +520,7 @@ class NewGBPing : NSObject {
         //set up data structs
         self.nextSequenceNumber = 0
         
-        NewGBPingMannager.shared.addDisposeBlock {
+        PingMannager.shared.addDisposeBlock {
             var streamError = CFStreamError()
             var success : Bool
             
