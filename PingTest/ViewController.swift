@@ -10,9 +10,16 @@ import UIKit
 
 class ViewController: UIViewController {
 
+    @IBOutlet var ipsView : UITextView!
+    @IBOutlet var pingResultView : UITextView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        ipsView.layer.borderColor = UIColor.black.cgColor
+        ipsView.layer.borderWidth = 1
+        pingResultView.layer.borderColor = UIColor.black.cgColor
+        pingResultView.layer.borderWidth = 1
         let ping = Ping()
         ping.delegate = self
         ping.host = "www.baidu.com"
@@ -27,6 +34,13 @@ class ViewController: UIViewController {
             })
         }
     }
+    @IBAction func enterAction(_ button:UIButton){
+        let ipContent = ipsView.text
+        if let ipArray = ipContent?.components(separatedBy: ","){
+            for ip in ipArray
+        }
+        
+    }
 
 }
 extension UIViewController : PingDelegate{
@@ -37,6 +51,9 @@ extension UIViewController : PingDelegate{
         NSLog("\(result.sendDate!.description)"+"\(result.receiveDate!.description)")
     }
     
+    
+}
+extension UIViewController : UITextViewDelegate{
     
 }
 

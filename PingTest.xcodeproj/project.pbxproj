@@ -12,10 +12,8 @@
 		27143B4021A0507300587976 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27143B3E21A0507300587976 /* Main.storyboard */; };
 		27143B4221A0507C00587976 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 27143B4121A0507C00587976 /* Assets.xcassets */; };
 		27143B4521A0507C00587976 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27143B4321A0507C00587976 /* LaunchScreen.storyboard */; };
-		27143B5721A0517200587976 /* GBPing.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4E21A0517200587976 /* GBPing.m */; };
 		27143B5821A0517200587976 /* Ping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B4F21A0517200587976 /* Ping.swift */; };
 		27143B5921A0517200587976 /* ICMPHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5021A0517200587976 /* ICMPHeader.swift */; };
-		27143B5B21A0517200587976 /* GBPingSummary.m in Sources */ = {isa = PBXBuildFile; fileRef = 27143B5321A0517200587976 /* GBPingSummary.m */; };
 		27143BC921A64B1900587976 /* PingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143BC821A64B1900587976 /* PingManager.swift */; };
 		272ACF2521AA555400228B37 /* PingResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272ACF2421AA555400228B37 /* PingResult.swift */; };
 /* End PBXBuildFile section */
@@ -28,15 +26,8 @@
 		27143B4121A0507C00587976 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		27143B4421A0507C00587976 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		27143B4621A0507C00587976 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		27143B4D21A0517200587976 /* GBPingSummary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GBPingSummary.h; sourceTree = "<group>"; };
-		27143B4E21A0517200587976 /* GBPing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GBPing.m; sourceTree = "<group>"; };
 		27143B4F21A0517200587976 /* Ping.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Ping.swift; sourceTree = "<group>"; };
 		27143B5021A0517200587976 /* ICMPHeader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ICMPHeader.swift; sourceTree = "<group>"; };
-		27143B5221A0517200587976 /* GBPing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GBPing.h; sourceTree = "<group>"; };
-		27143B5321A0517200587976 /* GBPingSummary.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GBPingSummary.m; sourceTree = "<group>"; };
-		27143B5421A0517200587976 /* GBPing-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "GBPing-Prefix.pch"; sourceTree = "<group>"; };
-		27143B5521A0517200587976 /* ICMPHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ICMPHeader.h; sourceTree = "<group>"; };
-		27143B6021A0527800587976 /* PingTest-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PingTest-Bridging-Header.h"; sourceTree = "<group>"; };
 		27143BC821A64B1900587976 /* PingManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PingManager.swift; sourceTree = "<group>"; };
 		272ACF2421AA555400228B37 /* PingResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingResult.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -73,8 +64,7 @@
 			children = (
 				27143B3A21A0507300587976 /* AppDelegate.swift */,
 				27143B3C21A0507300587976 /* ViewController.swift */,
-				27143B6021A0527800587976 /* PingTest-Bridging-Header.h */,
-				27143B4C21A0517200587976 /* GBPing */,
+				27143B4C21A0517200587976 /* PingManager */,
 				27143B3E21A0507300587976 /* Main.storyboard */,
 				27143B4121A0507C00587976 /* Assets.xcassets */,
 				27143B4321A0507C00587976 /* LaunchScreen.storyboard */,
@@ -83,21 +73,15 @@
 			path = PingTest;
 			sourceTree = "<group>";
 		};
-		27143B4C21A0517200587976 /* GBPing */ = {
+		27143B4C21A0517200587976 /* PingManager */ = {
 			isa = PBXGroup;
 			children = (
-				27143B5421A0517200587976 /* GBPing-Prefix.pch */,
-				27143B5221A0517200587976 /* GBPing.h */,
-				27143B4E21A0517200587976 /* GBPing.m */,
-				27143B4D21A0517200587976 /* GBPingSummary.h */,
-				27143B5321A0517200587976 /* GBPingSummary.m */,
-				27143B5521A0517200587976 /* ICMPHeader.h */,
 				27143B5021A0517200587976 /* ICMPHeader.swift */,
 				272ACF2421AA555400228B37 /* PingResult.swift */,
 				27143B4F21A0517200587976 /* Ping.swift */,
 				27143BC821A64B1900587976 /* PingManager.swift */,
 			);
-			path = GBPing;
+			path = PingManager;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -174,8 +158,6 @@
 				272ACF2521AA555400228B37 /* PingResult.swift in Sources */,
 				27143BC921A64B1900587976 /* PingManager.swift in Sources */,
 				27143B5921A0517200587976 /* ICMPHeader.swift in Sources */,
-				27143B5B21A0517200587976 /* GBPingSummary.m in Sources */,
-				27143B5721A0517200587976 /* GBPing.m in Sources */,
 				27143B3D21A0507300587976 /* ViewController.swift in Sources */,
 				27143B3B21A0507300587976 /* AppDelegate.swift in Sources */,
 				27143B5821A0517200587976 /* Ping.swift in Sources */,
@@ -333,7 +315,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.test.PingTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = "PingTest/PingTest-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -352,7 +334,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.test.PingTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = "PingTest/PingTest-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
