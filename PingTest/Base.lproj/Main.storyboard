@@ -28,27 +28,82 @@
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" editable="NO" text="The result of ping" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="lg1-D3-fcq">
-                                <rect key="frame" x="5" y="130" width="365" height="537"/>
+                                <rect key="frame" x="5" y="160" width="365" height="507"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="dsN-XM-Fvz">
+                                <rect key="frame" x="273" y="125" width="46" height="30"/>
+                                <color key="backgroundColor" red="0.21176470589999999" green="0.72549019609999998" blue="0.68627450980000004" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="46" id="bRQ-7J-JtR"/>
+                                </constraints>
+                                <state key="normal" title="Start">
+                                    <color key="titleColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="startAction:" destination="BYZ-38-t0r" eventType="touchDown" id="t5r-dN-joD"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SMT-Tb-ZNc">
+                                <rect key="frame" x="324" y="125" width="46" height="30"/>
+                                <color key="backgroundColor" red="0.21176470589999999" green="0.72549019609999998" blue="0.68627450980000004" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="46" id="QSm-YD-Obf"/>
+                                </constraints>
+                                <state key="normal" title="Stop">
+                                    <color key="titleColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="stopAction:" destination="BYZ-38-t0r" eventType="touchDown" id="fY2-li-q8d"/>
+                                </connections>
+                            </button>
+                            <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="period" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="a0A-Qf-xOW">
+                                <rect key="frame" x="5" y="125" width="70.5" height="30"/>
+                                <nil key="textColor"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" keyboardType="numberPad"/>
+                                <connections>
+                                    <outlet property="delegate" destination="BYZ-38-t0r" id="Iw8-oA-geb"/>
+                                </connections>
+                            </textField>
+                            <textField opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="timeout" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="bQk-Xz-9wD">
+                                <rect key="frame" x="80.5" y="125" width="70.5" height="30"/>
+                                <nil key="textColor"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" keyboardType="numberPad"/>
+                                <connections>
+                                    <outlet property="delegate" destination="BYZ-38-t0r" id="Zsn-22-29c"/>
+                                </connections>
+                            </textField>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="lg1-D3-fcq" firstAttribute="leading" secondItem="MZB-h0-wv6" secondAttribute="leading" id="Ani-hs-hY3"/>
+                            <constraint firstItem="a0A-Qf-xOW" firstAttribute="top" secondItem="MZB-h0-wv6" secondAttribute="bottom" constant="5" id="Eo8-Sc-ko5"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="SMT-Tb-ZNc" secondAttribute="trailing" constant="5" id="LDx-mv-eIh"/>
+                            <constraint firstItem="SMT-Tb-ZNc" firstAttribute="top" secondItem="MZB-h0-wv6" secondAttribute="bottom" constant="5" id="Oii-nu-bVY"/>
+                            <constraint firstItem="bQk-Xz-9wD" firstAttribute="width" secondItem="a0A-Qf-xOW" secondAttribute="width" id="Pae-Iw-LvE"/>
                             <constraint firstItem="MZB-h0-wv6" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="5" id="Ri1-1I-5i8"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="lg1-D3-fcq" secondAttribute="bottom" id="VoI-g6-B9k"/>
-                            <constraint firstItem="lg1-D3-fcq" firstAttribute="top" secondItem="MZB-h0-wv6" secondAttribute="bottom" constant="10" id="WHL-4b-A7I"/>
                             <constraint firstItem="MZB-h0-wv6" firstAttribute="trailing" secondItem="6Tk-OE-BBY" secondAttribute="trailing" constant="-5" id="XNK-ri-CNP"/>
+                            <constraint firstItem="bQk-Xz-9wD" firstAttribute="leading" secondItem="a0A-Qf-xOW" secondAttribute="trailing" constant="5" id="fjB-yo-ZNl"/>
+                            <constraint firstItem="bQk-Xz-9wD" firstAttribute="centerY" secondItem="a0A-Qf-xOW" secondAttribute="centerY" id="g1t-8O-6Hf"/>
                             <constraint firstItem="MZB-h0-wv6" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" id="hJe-ca-iPf"/>
                             <constraint firstItem="lg1-D3-fcq" firstAttribute="trailing" secondItem="MZB-h0-wv6" secondAttribute="trailing" id="lsP-ao-Wd3"/>
+                            <constraint firstItem="lg1-D3-fcq" firstAttribute="top" secondItem="dsN-XM-Fvz" secondAttribute="bottom" constant="5" id="ryt-V6-9FF"/>
+                            <constraint firstItem="dsN-XM-Fvz" firstAttribute="top" secondItem="MZB-h0-wv6" secondAttribute="bottom" constant="5" id="xWR-o3-uzo"/>
+                            <constraint firstItem="a0A-Qf-xOW" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="5" id="yLX-OA-6yN"/>
+                            <constraint firstItem="SMT-Tb-ZNc" firstAttribute="leading" secondItem="dsN-XM-Fvz" secondAttribute="trailing" constant="5" id="ydX-jk-H6f"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
                     <connections>
                         <outlet property="ipsView" destination="MZB-h0-wv6" id="Qbj-Mw-ORM"/>
+                        <outlet property="periodTextField" destination="a0A-Qf-xOW" id="KgT-Ft-o0q"/>
                         <outlet property="pingResultView" destination="lg1-D3-fcq" id="Dxv-IB-mG5"/>
+                        <outlet property="timeoutTextField" destination="bQk-Xz-9wD" id="Wcu-cc-my9"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

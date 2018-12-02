@@ -21,7 +21,13 @@ class PingResult: NSObject {
     var ttl : UInt = 0
     var host : String?
     var sendDate : Date?
-    var receiveDate : Date?
+    var receiveDate : Date?{
+        didSet{
+            if let receiveDate = receiveDate?.timeIntervalSince1970,let sendDate = sendDate?.timeIntervalSince1970{
+                time = receiveDate - sendDate
+            }
+        }
+    }
     var time : TimeInterval = 0
     var rtt : TimeInterval{
         get{

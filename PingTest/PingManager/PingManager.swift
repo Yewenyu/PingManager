@@ -49,6 +49,13 @@ class PingMannager : NSObject{
     var isDispose = false
     var isPinging = false
     var pingPeriod : TimeInterval = 1
+    var timeout : TimeInterval = 1{
+        didSet{
+            for ping in pings{
+                ping.timeout = timeout
+            }
+        }
+    }
     
     @objc func addDisposeBlock(_ block: @escaping ()->()){
         disposeQueue.sync {

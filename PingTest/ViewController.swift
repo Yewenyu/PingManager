@@ -12,6 +12,10 @@ class ViewController: UIViewController {
 
     @IBOutlet var ipsView : UITextView!
     @IBOutlet var pingResultView : UITextView!
+    @IBOutlet var periodTextField : UITextField!
+    @IBOutlet var timeoutTextField : UITextField!
+    var timeout : TimeInterval = 1
+    var period : TimeInterval = 1
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,40 +24,80 @@ class ViewController: UIViewController {
         ipsView.layer.borderWidth = 1
         pingResultView.layer.borderColor = UIColor.black.cgColor
         pingResultView.layer.borderWidth = 1
-        let ping = Ping()
-        ping.delegate = self
-        ping.host = "www.baidu.com"
-        ping.timeout = 1
-        PingMannager.shared.setup {
-            PingMannager.shared.pingPeriod = 0.2
-            PingMannager.shared.startPing()
-            DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + 1.4, execute: {
-                if PingMannager.shared.isPinging{
-                    PingMannager.shared.stopPing()
-                }
-            })
-        }
+        periodTextField.text = period.description
+        timeoutTextField.text = timeout.description
+//        let ping = Ping()
+//        ping.delegate = self
+//        ping.host = "www.baidu.com"
+//        PingMannager.shared.setup {
+//            PingMannager.shared.timeout = 1
+//            PingMannager.shared.pingPeriod = 0.2
+//            PingMannager.shared.startPing()
+//            DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + 1.4, execute: {
+//                if PingMannager.shared.isPinging{
+//                    PingMannager.shared.stopPing()
+//                }
+//            })
+//        }
     }
-    @IBAction func enterAction(_ button:UIButton){
+    @IBAction func stopAction(_ button:UIButton){
+        PingMannager.shared.stopPing()
+    }
+    @IBAction func startAction(_ button:UIButton){
         let ipContent = ipsView.text
         if let ipArray = ipContent?.components(separatedBy: ","){
-            for ip in ipArray
+            for ip in ipArray{
+                let ping = Ping()
+                ping.delegate = self
+                ping.host = ip
+            }
+        }
+        self.timeout = TimeInterval(self.timeoutTextField.text ?? self.timeout.description)!
+        self.period = TimeInterval(self.periodTextField.text ?? self.period.description)!
+        PingMannager.shared.setup {
+            PingMannager.shared.timeout = self.timeout
+            PingMannager.shared.pingPeriod = self.period
+            PingMannager.shared.startPing()
+//            DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + 1.4, execute: {
+//                if PingMannager.shared.isPinging{
+//                    PingMannager.shared.stopPing()
+//                }
+//            })
         }
         
     }
 
 }
-extension UIViewController : PingDelegate{
+extension ViewController : PingDelegate{
     func stop(_ ping: Ping) {
         
     }
+    
+    func ping(_ pinger: Ping, didFailWithError error: Error) {
+        
+    }
+    func ping(_ pinger: Ping, didTimeoutWith result: PingResult) {
+        pingResult(result)
+    }
     func ping(_ pinger: Ping, didReceiveReplyWith result: PingResult) {
-        NSLog("\(result.sendDate!.description)"+"\(result.receiveDate!.description)")
+        pingResult(result)
+    }
+    func ping(_ pinger: Ping, didReceiveUnexpectedReplyWith result: PingResult) {
+        pingResult(result)
+    }
+    func pingResult(_ result:PingResult){
+        var resultString = ""   
+        if result.pingStatus == .success{
+            resultString = "Host:\(result.host ?? "") ttl:\(result.ttl) time:\(Int(result.time * 1000))"
+        }else{
+            resultString = "Host:\(result.host ?? "") failed"
+        }
+        let oldString = pingResultView.text ?? ""
+        pingResultView.text = resultString + "\n" + oldString
     }
     
-    
 }
-extension UIViewController : UITextViewDelegate{
+extension ViewController : UITextFieldDelegate{
     
 }
 

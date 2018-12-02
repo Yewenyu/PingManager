@@ -38,6 +38,7 @@ class Ping : NSObject {
     var timeout : TimeInterval = 1
     var payloadSize : Int = kDefaultPayloadSize
     var ttl : UInt = 0
+    
     var isPinging : Bool = false
     var isReady : Bool = false
     var debug : Bool = false
@@ -505,6 +506,7 @@ class Ping : NSObject {
             DispatchQueue.main.async {
                 callBack(false,nil)
             }
+            return
         }
     
     //error out if no host is set
@@ -515,6 +517,7 @@ class Ping : NSObject {
             DispatchQueue.main.async {
                 callBack(false,nil)
             }
+            return
         }
     
         //set up data structs
