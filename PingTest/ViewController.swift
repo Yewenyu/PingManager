@@ -50,6 +50,7 @@ class ViewController: UIViewController {
                 let ping = Ping()
                 ping.delegate = self
                 ping.host = ip
+                PingMannager.shared.pings.append(ping)
             }
         }
         self.timeout = TimeInterval(self.timeoutTextField.text ?? self.timeout.description)!
@@ -58,11 +59,6 @@ class ViewController: UIViewController {
             PingMannager.shared.timeout = self.timeout
             PingMannager.shared.pingPeriod = self.period
             PingMannager.shared.startPing()
-//            DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + 1.4, execute: {
-//                if PingMannager.shared.isPinging{
-//                    PingMannager.shared.stopPing()
-//                }
-//            })
         }
         
     }

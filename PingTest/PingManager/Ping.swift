@@ -50,9 +50,6 @@ class Ping : NSObject {
     var timeoutTimers = [String:Timer]()
     var socketNum : Int32 = 0
     var isStopped = true
-    
-   
-    
 
     override init() {
         super.init()
@@ -61,19 +58,9 @@ class Ping : NSObject {
         Ping.pingThreadCount += 1
         pingThreadCount = Ping.pingThreadCount
 //        self.isListenThread = false
-        self.isPinging = true
-        weak var ping = self
-        let sendBlock = { () -> Ping? in
-            ping?.send()
-            return ping
-        }
-        let listenBlock = { () -> Ping? in
-            ping?.listenOnce()
-            return ping
-        }
-        PingMannager.shared.sendBlocks.append(sendBlock)
-        PingMannager.shared.listenBlocks.append(listenBlock)
-        PingMannager.shared.pings.append(self)
+//        self.isPinging = true
+        
+        
         
     }
      func startPinging() {
@@ -112,6 +99,7 @@ class Ping : NSObject {
         
         Ping.pingThreadCount -= 1
         
+        NSLog(Ping.pingThreadCount.description)
     }
     let INET6_ADDRSTRLEN = 64
     
@@ -523,129 +511,126 @@ class Ping : NSObject {
         //set up data structs
         self.nextSequenceNumber = 0
         
-        PingMannager.shared.addDisposeBlock {
-            var streamError = CFStreamError()
-            var success : Bool
-            
-            let hostRef : CFHost? = CFHostCreateWithName(nil,self.host! as CFString).takeUnretainedValue()
-            
-            if hostRef != nil{
-                success = CFHostStartInfoResolution(hostRef!, CFHostInfoType.addresses, &streamError)
-            }else{
-                success = false
-            }
-            
-            
-            if !success {
-                //construct an error
-                var userInfo : [String:Any] = [String:Any]()
-                var error : NSError
-                
-                if streamError.domain == kCFStreamErrorDomainNetDB {
-                    userInfo[kCFGetAddrInfoFailureKey as String] = NSNumber(value: streamError.error).description
-                }
-                error = NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorUnknown.rawValue), userInfo: userInfo)
-                self.stop()
-                
-                //notify about error and return
-                DispatchQueue.main.async {
-                    callBack(false,error)
-                }
-                if hostRef != nil{
-//                    CFRelease(hostRef);
-                }
-                
-                
-                return
-            }
-            
-            //get the first IPv4 or IPv6 address
-            var resolved = DarwinBoolean(false)
-            let addresses = CFHostGetAddressing(hostRef!,&resolved)?.takeUnretainedValue() as? [NSData]
-    
-            if resolved.boolValue, let addresses = addresses {
-                resolved = DarwinBoolean(false)
-                for address in addresses{
-                    let anAddrPtr = address.bytes.bindMemory(to: sockaddr.self, capacity: address.length)
-                    if address.length >= MemoryLayout<sockaddr>.size, (anAddrPtr.pointee.sa_family == AF_INET || anAddrPtr.pointee.sa_family == AF_INET6){
-                        resolved = DarwinBoolean(true)
-                        self.hostAddress = address as Data
-                        let sin = NSMutableData(bytes: address.bytes, length: address.length).mutableBytes.bindMemory(to: sockaddr_in.self, capacity: address.length)
-                        var str = [CChar](repeating: 0, count: self.INET6_ADDRSTRLEN)
+        var streamError = CFStreamError()
+        var success : Bool
         
-                        inet_ntop(Int32(anAddrPtr.pointee.sa_family), &(sin.pointee.sin_addr), &str, socklen_t(self.INET6_ADDRSTRLEN));
-                        self.hostAddressString = String(utf8String: str)!
-                        break
-                        
-                    }
+        let hostRef : CFHost? = CFHostCreateWithName(nil,self.host! as CFString).takeUnretainedValue()
+        
+        if hostRef != nil{
+            success = CFHostStartInfoResolution(hostRef!, CFHostInfoType.addresses, &streamError)
+        }else{
+            success = false
+        }
+        
+        
+        if !success {
+            //construct an error
+            var userInfo : [String:Any] = [String:Any]()
+            var error : NSError
+            
+            if streamError.domain == kCFStreamErrorDomainNetDB {
+                userInfo[kCFGetAddrInfoFailureKey as String] = NSNumber(value: streamError.error).description
+            }
+            error = NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorUnknown.rawValue), userInfo: userInfo)
+            self.stop()
+            
+            //notify about error and return
+            DispatchQueue.main.async {
+                callBack(false,error)
+            }
+            if hostRef != nil{
+                //                    CFRelease(hostRef);
+            }
+            
+            
+            return
+        }
+        
+        //get the first IPv4 or IPv6 address
+        var resolved = DarwinBoolean(false)
+        let addresses = CFHostGetAddressing(hostRef!,&resolved)?.takeUnretainedValue() as? [NSData]
+        
+        if resolved.boolValue, let addresses = addresses {
+            resolved = DarwinBoolean(false)
+            for address in addresses{
+                let anAddrPtr = address.bytes.bindMemory(to: sockaddr.self, capacity: address.length)
+                if address.length >= MemoryLayout<sockaddr>.size, (anAddrPtr.pointee.sa_family == AF_INET || anAddrPtr.pointee.sa_family == AF_INET6){
+                    resolved = DarwinBoolean(true)
+                    self.hostAddress = address as Data
+                    let sin = NSMutableData(bytes: address.bytes, length: address.length).mutableBytes.bindMemory(to: sockaddr_in.self, capacity: address.length)
+                    var str = [CChar](repeating: 0, count: self.INET6_ADDRSTRLEN)
+                    
+                    inet_ntop(Int32(anAddrPtr.pointee.sa_family), &(sin.pointee.sin_addr), &str, socklen_t(self.INET6_ADDRSTRLEN));
+                    self.hostAddressString = String(utf8String: str)!
+                    break
                     
                 }
-            }
-            
-            //we can stop host resolution now
-            if hostRef != nil {
-//                CFRelease(hostRef);
-            }
-            
-            //if an error occurred during resolution
-            if !resolved.boolValue {
-                //stop
-                self.stop()
-                DispatchQueue.main.async {
-                    callBack(false, NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorHostNotFound.rawValue), userInfo: nil))
-                }
                 
-                return
             }
-            
-            //set up socket
-            var  err = 0
-            switch self.hostAddressFamily {
-            case sa_family_t(AF_INET):
-                
-                self.socketNum = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP)
-                if self.socketNum < 0{
-                    err = Int(errno)
-                }
-                break
-            
-            case sa_family_t(AF_INET6):
-                self.socketNum = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6)
-                if self.socketNum < 0{
-                    err = Int(errno)
-                }
-                break
-
-            default:
-                err = Int(EPROTONOSUPPORT)
-                break
-            }
-            
-            //couldnt setup socket
-            if err != 0{
-                //clean up so far
-                self.stop()
-                DispatchQueue.main.async {
-                    callBack(false, NSError(domain: NSPOSIXErrorDomain as String, code: err, userInfo: nil))
-                }
-                
-                return
-            }
-            
-            //set ttl on the socket
-            if self.ttl != 0 {
-                var ttlForSockOpt = u_char(self.ttl)
-                setsockopt(self.socketNum, IPPROTO_IP, IP_TTL, &ttlForSockOpt, socklen_t(MemoryLayout<UInt>.size));
-            }
-            
-            //we are ready now
-            self.isReady = true
-            DispatchQueue.main.async {
-                callBack(true,nil)
-            }
-            self.isStopped = true
-            
         }
+        
+        //we can stop host resolution now
+        if hostRef != nil {
+            //                CFRelease(hostRef);
+        }
+        
+        //if an error occurred during resolution
+        if !resolved.boolValue {
+            //stop
+            self.stop()
+            DispatchQueue.main.async {
+                callBack(false, NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorHostNotFound.rawValue), userInfo: nil))
+            }
+            
+            return
+        }
+        
+        //set up socket
+        var  err = 0
+        switch self.hostAddressFamily {
+        case sa_family_t(AF_INET):
+            
+            self.socketNum = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP)
+            if self.socketNum < 0{
+                err = Int(errno)
+            }
+            break
+            
+        case sa_family_t(AF_INET6):
+            self.socketNum = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6)
+            if self.socketNum < 0{
+                err = Int(errno)
+            }
+            break
+            
+        default:
+            err = Int(EPROTONOSUPPORT)
+            break
+        }
+        
+        //couldnt setup socket
+        if err != 0{
+            //clean up so far
+            self.stop()
+            DispatchQueue.main.async {
+                callBack(false, NSError(domain: NSPOSIXErrorDomain as String, code: err, userInfo: nil))
+            }
+            
+            return
+        }
+        
+        //set ttl on the socket
+        if self.ttl != 0 {
+            var ttlForSockOpt = u_char(self.ttl)
+            setsockopt(self.socketNum, IPPROTO_IP, IP_TTL, &ttlForSockOpt, socklen_t(MemoryLayout<UInt>.size));
+        }
+        
+        //we are ready now
+        self.isReady = true
+        DispatchQueue.main.async {
+            callBack(true,nil)
+        }
+        self.isStopped = true
     }
     
 

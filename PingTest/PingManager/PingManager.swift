@@ -40,7 +40,7 @@ class PingMannager : NSObject{
     
     var sendThread : Thread?
     var listenThread :Thread?
-    var disposeThread : Thread?
+    var setupThread : Thread?
     var pings = [Ping]()
     var sendBlocks = [Any]()
     var listenBlocks = [Any]()
@@ -79,31 +79,46 @@ class PingMannager : NSObject{
     }
     func setup(_ callBack:(()->())? = nil){
         var newPings = pings
-        if self.disposeThread == nil{
-            self.disposeThread = Thread(target: self, selector: #selector(self.disposeAction), object: nil)
-            self.disposeThread?.name = "disposeThread"
+        if self.setupThread == nil{
+            self.setupThread = Thread(target: self, selector: #selector(self.disposeAction), object: nil)
+            self.setupThread?.name = "disposeThread"
             self.isDispose = true
-            self.disposeThread?.start()
+            self.setupThread?.start()
         }
         
         for ping in pings{
             readyGroup.enter()
-            ping.setup { (success, error) in
-                if success{
-                    ping.startPinging()
-                }else{
-                    newPings.removeAll(where: { (delete) -> Bool in
-                        return delete.host == ping.host
-                    })
+            weak var weakPing = ping
+            weak var weakSelf = self
+            let setupBlock = {()->() in
+                weakPing?.setup { (success, error) in
+                    if success{
+                        let sendBlock = { () -> Ping? in
+                            weakPing?.send()
+                            return weakPing
+                        }
+                        let listenBlock = { () -> Ping? in
+                            weakPing?.listenOnce()
+                            return weakPing
+                        }
+                        weakSelf?.sendBlocks.append(sendBlock)
+                        weakSelf?.listenBlocks.append(listenBlock)
+                        weakPing?.startPinging()
+                        
+                    }else{
+                        newPings.removeAll(where: { (delete) -> Bool in
+                            return delete.host == weakPing?.host
+                        })
+                    }
+                    self.readyGroup.leave()
                 }
-                
-                
-                self.readyGroup.leave()
             }
+            self.disposeBlocks.append(setupBlock)
+            
         }
         readyGroup.notify(queue: readyQueue) {
             self.isDispose = false
-            self.disposeThread = nil
+            self.setupThread = nil
             self.pings = newPings
             callBack?()
         }
@@ -129,7 +144,7 @@ class PingMannager : NSObject{
             isPinging = false
             self.sendThread = nil
             self.listenThread = nil
-            self.disposeThread = nil
+            self.setupThread = nil
             self.sendBlocks.removeAll()
             self.listenBlocks.removeAll()
             self.disposeBlocks.removeAll()
