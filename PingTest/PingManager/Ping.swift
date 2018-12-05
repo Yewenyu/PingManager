@@ -513,8 +513,9 @@ class Ping : NSObject {
         
         var streamError = CFStreamError()
         var success : Bool
+        let hostName = CFHostCreateWithName(nil,self.host! as CFString).autorelease()
+        let hostRef : CFHost? = hostName.takeUnretainedValue()
         
-        let hostRef : CFHost? = CFHostCreateWithName(nil,self.host! as CFString).takeUnretainedValue()
         
         if hostRef != nil{
             success = CFHostStartInfoResolution(hostRef!, CFHostInfoType.addresses, &streamError)
@@ -539,7 +540,7 @@ class Ping : NSObject {
                 callBack(false,error)
             }
             if hostRef != nil{
-                //                    CFRelease(hostRef);
+                
             }
             
             
