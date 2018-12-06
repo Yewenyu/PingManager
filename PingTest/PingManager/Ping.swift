@@ -244,6 +244,7 @@ class Ping : NSObject {
     
 
     func listenPacket(){
+        weak var weakSelf = self
         var err : Int
         var ss = sockaddr_storage()
         let addr = UnsafeMutablePointer<sockaddr_storage>(&ss)
@@ -251,6 +252,7 @@ class Ping : NSObject {
         var bytesRead : ssize_t
         let kBufferSize = 65535
         let buffer = malloc(kBufferSize)
+        
         
         assert((buffer != nil))
         
@@ -325,13 +327,19 @@ class Ping : NSObject {
                         timer?.invalidate()
                         self.timeoutTimers.removeValue(forKey: key)
                         DispatchQueue.main.async {
-                            self.delegate?.ping?(self, didReceiveReplyWith: pingResult!)
+                            if let weakSelf = weakSelf{
+                                weakSelf.delegate?.ping?(weakSelf, didReceiveReplyWith: pingResult!)
+                            }
+                            
                         }
                     }else {
                         pingResult?.pingStatus = .fail;
                         
                         DispatchQueue.main.async {
-                            self.delegate?.ping?(self, didReceiveUnexpectedReplyWith: pingResult!)
+                            if let weakSelf = weakSelf{
+                                weakSelf.delegate?.ping?(weakSelf, didReceiveUnexpectedReplyWith: pingResult!)
+                            }
+                            
                         }
                         
                     }
@@ -347,7 +355,10 @@ class Ping : NSObject {
             
             if self.isStopped{
                 DispatchQueue.main.async {
-                    self.delegate?.ping?(self, didFailWithError: NSError.init(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
+                    if let weakSelf = weakSelf{
+                        weakSelf.delegate?.ping?(weakSelf, didFailWithError: NSError.init(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
+                    }
+                   
                 }
             }
             self.stop()
@@ -387,7 +398,7 @@ class Ping : NSObject {
     func sendPacket(){
         if self.isPinging {
             
-    
+            weak var weakSelf = self
             var err :Int
             var packet: NSData = NSData()
             var bytesSent:ssize_t
@@ -438,8 +449,9 @@ class Ping : NSObject {
                 let pingResultCopy : PingResult = newPingResult.copy()
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
+                
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
-                    self.pendingPings.removeValue(forKey: key)
+                    weakSelf?.pendingPings.removeValue(forKey: key)
                 }
                 
                 
@@ -448,9 +460,9 @@ class Ping : NSObject {
                 let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
                     newPingResult.pingStatus = .fail
                     DispatchQueue.main.async {
-                        self.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
+                        weakSelf?.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
                     }
-                    self.timeoutTimers.removeValue(forKey: key)
+                    weakSelf?.timeoutTimers.removeValue(forKey: key)
                 }), selector: #selector(BlockOperation.main), userInfo: nil, repeats: false)
                 RunLoop.main.add(timeoutTimer, forMode: .commonModes)
                 
@@ -480,7 +492,7 @@ class Ping : NSObject {
                     newPingResult.pingStatus = .fail
                     let pingReultCopyAfterFailure : PingResult = newPingResult.copy()
                     
-                    self.delegate?.ping?(self, didFailToSendPingWith: pingReultCopyAfterFailure, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
+                    delegate?.ping?(self, didFailToSendPingWith: pingReultCopyAfterFailure, error: NSError(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
                 }
             }
         }

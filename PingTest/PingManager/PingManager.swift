@@ -79,6 +79,7 @@ class PingMannager : NSObject{
     }
     func setup(_ callBack:(()->())? = nil){
         var newPings = pings
+        
         if self.setupThread == nil{
             self.setupThread = Thread(target: self, selector: #selector(self.disposeAction), object: nil)
             self.setupThread?.name = "disposeThread"
@@ -105,6 +106,7 @@ class PingMannager : NSObject{
             
         }
         readyGroup.notify(queue: readyQueue) {
+            weak var ss = self.pings[0]
             self.isDispose = false
             self.disposeBlocks.removeAll()
             self.sendThread?.cancel()
@@ -154,7 +156,6 @@ class PingMannager : NSObject{
                     }
                     i += 1
                 }
-                
                 var time : TimeInterval = 0;
                 while (runUntil > time) {
                     let runUntilDate = Date(timeIntervalSinceReferenceDate: runUntil)
