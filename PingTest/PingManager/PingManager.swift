@@ -89,22 +89,10 @@ class PingMannager : NSObject{
         for ping in pings{
             readyGroup.enter()
             weak var weakPing = ping
-            weak var weakSelf = self
             let setupBlock = {()->() in
                 weakPing?.setup { (success, error) in
                     if success{
-                        let sendBlock = { () -> Ping? in
-                            weakPing?.send()
-                            return weakPing
-                        }
-                        let listenBlock = { () -> Ping? in
-                            weakPing?.listenOnce()
-                            return weakPing
-                        }
-                        weakSelf?.sendBlocks.append(sendBlock)
-                        weakSelf?.listenBlocks.append(listenBlock)
                         weakPing?.startPinging()
-                        
                     }else{
                         newPings.removeAll(where: { (delete) -> Bool in
                             return delete.host == weakPing?.host
@@ -157,17 +145,16 @@ class PingMannager : NSObject{
     
     @objc private func sendAction(){
         autoreleasepool {
-            var blocks = sendBlocks
-            while isPinging,blocks.count > 0{
+            var pings = self.pings
+            while isPinging,pings.count > 0{
                 var i = 0
                 let runUntil = CFAbsoluteTimeGetCurrent() + self.pingPeriod;
-                while i < blocks.count{
-                    if let block = blocks[i] as? ()->(Ping?){
-                        let ping = block()
-                        if ping?.isPinging == false{
-                            blocks.remove(at: i)
-                            i -= 1
-                        }
+                while i < pings.count{
+                    let ping = pings[i]
+                    ping.send()
+                    if ping.isPinging == false{
+                        pings.remove(at: i)
+                        i -= 1
                     }
                     i += 1
                 }
@@ -183,18 +170,15 @@ class PingMannager : NSObject{
     }
     @objc private func listenAction(){
         autoreleasepool {
-            var blocks = listenBlocks
-            while isPinging,blocks.count > 0{
+            var pings = self.pings
+            while isPinging,pings.count > 0{
                 var i = 0
-                
-                while i < blocks.count{
-                    if let block = blocks[i] as? ()->(Ping?){
-                        let ping = block()
-                        if ping?.isPinging == false{
-                            blocks.remove(at: i)
-                             i -= 1
-                        }
-                       
+                while i < pings.count{
+                    let ping = pings[i]
+                    ping.listenOnce()
+                    if ping.isPinging == false{
+                        pings.remove(at: i)
+                        i -= 1
                     }
                     i += 1
                 }

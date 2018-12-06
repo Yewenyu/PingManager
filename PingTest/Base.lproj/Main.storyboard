@@ -18,7 +18,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" text="please input the host name" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="MZB-h0-wv6">
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" text="www.baidu.com" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="MZB-h0-wv6">
                                 <rect key="frame" x="5" y="20" width="365" height="100"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>

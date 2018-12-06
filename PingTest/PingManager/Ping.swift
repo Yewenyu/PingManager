@@ -386,6 +386,7 @@ class Ping : NSObject {
     }
     func sendPacket(){
         if self.isPinging {
+            
     
             var err :Int
             var packet: NSData = NSData()
