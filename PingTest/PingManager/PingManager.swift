@@ -42,8 +42,6 @@ class PingMannager : NSObject{
     var listenThread :Thread?
     var setupThread : Thread?
     var pings = [Ping]()
-    var sendBlocks = [Any]()
-    var listenBlocks = [Any]()
     var disposeBlocks = [Any]()
     
     var isDispose = false
@@ -73,7 +71,9 @@ class PingMannager : NSObject{
     func removeDisposeBlocksFirst(){
         disposeQueue.sync {
             var blocks = self.disposeBlocks
-            blocks.removeFirst()
+            if blocks.count > 0{
+                blocks.removeFirst()
+            }
             self.disposeBlocks = blocks
         }
     }
@@ -106,6 +106,8 @@ class PingMannager : NSObject{
         }
         readyGroup.notify(queue: readyQueue) {
             self.isDispose = false
+            self.disposeBlocks.removeAll()
+            self.sendThread?.cancel()
             self.setupThread = nil
             self.pings = newPings
             callBack?()
@@ -130,12 +132,6 @@ class PingMannager : NSObject{
     func stopPing(){
         if isPinging{
             isPinging = false
-            self.sendThread = nil
-            self.listenThread = nil
-            self.setupThread = nil
-            self.sendBlocks.removeAll()
-            self.listenBlocks.removeAll()
-            self.disposeBlocks.removeAll()
             for ping in pings{
                 ping.stop()
             }
@@ -166,6 +162,8 @@ class PingMannager : NSObject{
                     time = CFAbsoluteTimeGetCurrent();
                 }
             }
+            self.sendThread?.cancel()
+            self.sendThread = nil
         }
     }
     @objc private func listenAction(){
@@ -183,6 +181,8 @@ class PingMannager : NSObject{
                     i += 1
                 }
             }
+            self.listenThread?.cancel()
+            self.listenThread = nil
         }
     }
     @objc private func disposeAction(){
