@@ -44,7 +44,7 @@ class PingMannager : NSObject{
     var pings = [Ping]()
     var disposeBlocks = [Any]()
     
-    var isDispose = false
+    var isSettingUp = false
     var isPinging = false
     var pingPeriod : TimeInterval = 1
     var timeout : TimeInterval = 1{
@@ -53,6 +53,9 @@ class PingMannager : NSObject{
                 ping.timeout = timeout
             }
         }
+    }
+    @objc func add(_ ping:Ping){
+        pings.append(ping)
     }
     
     @objc func addDisposeBlock(_ block: @escaping ()->()){
@@ -83,7 +86,7 @@ class PingMannager : NSObject{
         if self.setupThread == nil{
             self.setupThread = Thread(target: self, selector: #selector(self.disposeAction), object: nil)
             self.setupThread?.name = "disposeThread"
-            self.isDispose = true
+            self.isSettingUp = true
             self.setupThread?.start()
         }
         
@@ -92,6 +95,7 @@ class PingMannager : NSObject{
             weak var weakPing = ping
             let setupBlock = {()->() in
                 weakPing?.setup { (success, error) in
+//                    var success = false
                     if success{
                         weakPing?.startPinging()
                     }else{
@@ -106,8 +110,7 @@ class PingMannager : NSObject{
             
         }
         readyGroup.notify(queue: readyQueue) {
-            weak var ss = self.pings[0]
-            self.isDispose = false
+            self.isSettingUp = false
             self.disposeBlocks.removeAll()
             self.sendThread?.cancel()
             self.setupThread = nil
@@ -188,7 +191,7 @@ class PingMannager : NSObject{
     }
     @objc private func disposeAction(){
         autoreleasepool {
-            while isDispose{
+            while isSettingUp{
                 while self.getDisposeBlocks().count > 0{
                     let blocks = self.getDisposeBlocks()
                     if let block = blocks.first as? ()->(){

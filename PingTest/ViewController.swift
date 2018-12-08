@@ -50,7 +50,7 @@ class ViewController: UIViewController {
                 let ping = Ping()
                 ping.delegate = self
                 ping.host = ip
-                PingMannager.shared.pings.append(ping)
+                PingMannager.shared.add(ping)
             }
         }
         self.timeout = TimeInterval(self.timeoutTextField.text ?? self.timeout.description)!

@@ -57,11 +57,7 @@ class Ping : NSObject {
         self.identifier = UInt16(truncatingIfNeeded: arc4random())
         Ping.pingThreadCount += 1
         pingThreadCount = Ping.pingThreadCount
-//        self.isListenThread = false
-//        self.isPinging = true
-        
-        
-        
+
     }
      func startPinging() {
         self.isPinging = true
@@ -75,23 +71,10 @@ class Ping : NSObject {
     }
     
      func send() {
-        
-//        super.send()
         sendPacket()
         pingThreadCount += 1
-//        NSLog(pingThreadCount.description)
-//        self.listenOnce()
-//        let current = Thread.current.name
-//        if current != pingThreadCount.description{
-//            Thread.current.name = pingThreadCount.description
-//            NSLog(pingThreadCount.description)
-//        }
-        
-        
     }
      func listenOnce() {
-        
-//        super.listenOnce()
         listenPacket()
         
     }
@@ -99,7 +82,7 @@ class Ping : NSObject {
         
         Ping.pingThreadCount -= 1
         
-        NSLog(Ping.pingThreadCount.description)
+//        NSLog(Ping.pingThreadCount.description)
     }
     let INET6_ADDRSTRLEN = 64
     
