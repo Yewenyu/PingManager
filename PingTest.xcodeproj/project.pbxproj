@@ -81,7 +81,8 @@
 				27143B4F21A0517200587976 /* Ping.swift */,
 				27143BC821A64B1900587976 /* PingManager.swift */,
 			);
-			path = PingManager;
+			name = PingManager;
+			path = ../PingManager;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
