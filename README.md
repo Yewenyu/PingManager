@@ -1,6 +1,10 @@
 # PingManager
 Supports multiple pings at the same time, and greatly reduces thread resource consumption
 
+## Example
+[1.gif](https://github.com/Yewenyu/PingManager/blob/master/1.gif)
+
+[2.gif](https://github.com/Yewenyu/PingManager/blob/master/2.gif)
 ## Usage
 ```
 for host in hostArray{
@@ -15,3 +19,4 @@ PingMannager.shared.setup {
    PingMannager.shared.startPing()
 }
 ```
+
