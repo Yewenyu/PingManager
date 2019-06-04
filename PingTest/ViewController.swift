@@ -88,8 +88,11 @@ extension ViewController : PingDelegate{
         }else{
             resultString = "Host:\(result.host ?? "") failed"
         }
-        let oldString = pingResultView.text ?? ""
-        pingResultView.text = resultString + "\n" + oldString
+        DispatchQueue.main.async {
+            let oldString = self.pingResultView.text ?? ""
+            self.pingResultView.text = resultString + "\n" + oldString
+        }
+        
     }
     
 }

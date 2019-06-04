@@ -10,9 +10,10 @@ import UIKit
 
 class PingMannager : NSObject{
     @objc static let shared = PingMannager()
-    let readyQueue = DispatchQueue(label: "NewGBPingReadyQueue")
+    let sendQueue = DispatchQueue(label: "NewGBPingSendQueue")
     let readyGroup = DispatchGroup()
-    let disposeQueue = DispatchQueue(label: "NewGBPingDisposeQueue")
+    let listenQueue = DispatchQueue(label: "NewGBPinglistenQueue")
+    let mainQueue = DispatchQueue(label: "NewGBPingMainQueue")
     
     var isMemoryWarning : Bool{
         set{
@@ -55,66 +56,37 @@ class PingMannager : NSObject{
         }
     }
     @objc func add(_ ping:Ping){
+        ping.mainQueue = mainQueue
         pings.append(ping)
     }
     
-    @objc func addDisposeBlock(_ block: @escaping ()->()){
-        disposeQueue.sync {
-            self.disposeBlocks.append(block)
-        }
-        
-    }
-    func getDisposeBlocks() -> [Any]{
-        var result = self.disposeBlocks
-        disposeQueue.sync {
-            result = self.disposeBlocks
-        }
-        return result
-    }
-    func removeDisposeBlocksFirst(){
-        disposeQueue.sync {
-            var blocks = self.disposeBlocks
-            if blocks.count > 0{
-                blocks.removeFirst()
-            }
-            self.disposeBlocks = blocks
-        }
-    }
     func setup(_ callBack:(()->())? = nil){
-        var newPings = pings
         
-        if self.setupThread == nil{
-            self.setupThread = Thread(target: self, selector: #selector(self.disposeAction), object: nil)
-            self.setupThread?.name = "disposeThread"
-            self.isSettingUp = true
-            self.setupThread?.start()
-        }
+        var newPings = self.pings
+        let pings = self.pings
+        weak var weakSelf = self
         
-        for ping in pings{
-            readyGroup.enter()
-            weak var weakPing = ping
-            let setupBlock = {()->() in
-                weakPing?.setup { (success, error) in
-//                    var success = false
-                    if success{
-                        weakPing?.startPinging()
-                    }else{
-                        newPings.removeAll(where: { (delete) -> Bool in
-                            return delete.host == weakPing?.host
-                        })
+        mainQueue.async {
+            for ping in pings{
+                weak var weakPing = ping
+                let setupBlock = {()->() in
+                    weakPing?.setup { (success, error) in
+                        
+                        if success{
+                            weakPing?.startPinging()
+                        }else{
+                            newPings.removeAll(where: { (delete) -> Bool in
+                                return delete.host == weakPing?.host
+                            })
+                        }
+                        
                     }
-                    self.readyGroup.leave()
                 }
+                setupBlock()
             }
-            self.disposeBlocks.append(setupBlock)
+            weakSelf?.isSettingUp = false
             
-        }
-        readyGroup.notify(queue: readyQueue) {
-            self.isSettingUp = false
-            self.disposeBlocks.removeAll()
-            self.sendThread?.cancel()
-            self.setupThread = nil
-            self.pings = newPings
+            weakSelf?.pings = newPings
             callBack?()
         }
         
@@ -122,86 +94,136 @@ class PingMannager : NSObject{
     func startPing(){
         if !self.isPinging{
             self.isPinging = true
-            if self.sendThread == nil{
-                self.sendThread = Thread(target: self, selector: #selector(self.sendAction), object: nil)
-                self.sendThread?.name = "sendThread"
-                self.listenThread = Thread(target: self, selector: #selector(self.listenAction), object: nil)
-                self.listenThread?.name = "listenThread"
-                
-                self.listenThread?.start()
-                self.sendThread?.start()
-                
-            }
+            send()
+            listen()
+            //            if self.sendThread == nil{
+            //                self.sendThread = Thread(target: self, selector: #selector(self.sendAction), object: nil)
+            //                self.sendThread?.name = "sendThread"
+            //                self.listenThread = Thread(target: self, selector: #selector(self.listenAction), object: nil)
+            //                self.listenThread?.name = "listenThread"
+            //
+            //                self.listenThread?.start()
+            //                self.sendThread?.start()
+            //
+            //            }
         }
     }
     func stopPing(){
-        if isPinging{
-            isPinging = false
-            for ping in pings{
-                ping.stop()
+        mainQueue.async {
+            if self.isPinging{
+                self.isPinging = false
+                for ping in self.pings{
+                    ping.stop()
+                }
+                self.pings.removeAll()
             }
-            self.pings.removeAll()
+        }
+        
+    }
+    private func send(){
+        weak var weakSelf =  self
+        mainQueue.async {
+            if weakSelf?.isPinging == true{
+                weakSelf?.pings.removeAll(where: { (ping) -> Bool in
+                    return ping.isPinging == false
+                })
+                if weakSelf?.pings.count ?? 0 > 0 {
+                    let pings = self.pings
+                    weakSelf?.sendQueue.async {
+                        autoreleasepool{
+                            let runUntil = CFAbsoluteTimeGetCurrent() + (weakSelf?.pingPeriod ?? 1)
+                            for ping in pings{
+                                ping.send()
+                            }
+                            var time : TimeInterval = 0;
+                            while (runUntil > time) {
+                                let runUntilDate = Date(timeIntervalSinceReferenceDate: runUntil)
+                                RunLoop.current.run(until: runUntilDate)
+                                time = CFAbsoluteTimeGetCurrent()
+                            }
+                            weakSelf?.send()
+                        }
+                    }
+                }
+                
+            }
+        }
+        
+    }
+    private func listen(){
+        weak var weakSelf =  self
+        mainQueue.async {
+            if weakSelf?.isPinging == true{
+                weakSelf?.pings.removeAll(where: { (ping) -> Bool in
+                    return ping.isPinging == false
+                })
+                if weakSelf?.pings.count ?? 0 > 0 {
+                    let pings = self.pings
+                    weakSelf?.listenQueue.async {
+                        autoreleasepool{
+                            for ping in pings{
+                                ping.listenOnce()
+                            }
+                            weakSelf?.listen()
+                        }
+                    }
+                }
+                
+            }
         }
     }
-    
     @objc private func sendAction(){
+        weak var weakSelf =  self
         autoreleasepool {
-            var pings = self.pings
-            while isPinging,pings.count > 0{
-                var i = 0
-                let runUntil = CFAbsoluteTimeGetCurrent() + self.pingPeriod;
-                while i < pings.count{
-                    let ping = pings[i]
-                    ping.send()
-                    if ping.isPinging == false{
-                        pings.remove(at: i)
-                        i -= 1
+            if var pings = weakSelf?.pings{
+                while true ==  weakSelf?.isPinging,pings.count > 0{
+                    var i = 0
+                    let runUntil = CFAbsoluteTimeGetCurrent() + (weakSelf?.pingPeriod ?? 1);
+                    while i < pings.count{
+                        let ping = pings[i]
+                        ping.send()
+                        if ping.isPinging == false{
+                            pings.remove(at: i)
+                            i -= 1
+                        }
+                        i += 1
                     }
-                    i += 1
+                    var time : TimeInterval = 0;
+                    while (runUntil > time) {
+                        let runUntilDate = Date(timeIntervalSinceReferenceDate: runUntil)
+                        RunLoop.current.run(until: runUntilDate)
+                        time = CFAbsoluteTimeGetCurrent();
+                    }
                 }
-                var time : TimeInterval = 0;
-                while (runUntil > time) {
-                    let runUntilDate = Date(timeIntervalSinceReferenceDate: runUntil)
-                    RunLoop.current.run(until: runUntilDate)
-                    time = CFAbsoluteTimeGetCurrent();
-                }
+                weakSelf?.sendThread?.cancel()
+                weakSelf?.sendThread = nil
             }
-            self.sendThread?.cancel()
-            self.sendThread = nil
+            
         }
     }
     @objc private func listenAction(){
+        weak var weakSelf =  self
         autoreleasepool {
-            var pings = self.pings
-            while isPinging,pings.count > 0{
-                var i = 0
-                while i < pings.count{
-                    let ping = pings[i]
-                    ping.listenOnce()
-                    if ping.isPinging == false{
-                        pings.remove(at: i)
-                        i -= 1
+            if var pings = weakSelf?.pings{
+                while true == weakSelf?.isPinging,pings.count > 0{
+                    var i = 0
+                    while i < pings.count{
+                        let ping = pings[i]
+                        ping.listenOnce()
+                        if ping.isPinging == false{
+                            pings.remove(at: i)
+                            i -= 1
+                        }
+                        i += 1
                     }
-                    i += 1
                 }
             }
-            self.listenThread?.cancel()
-            self.listenThread = nil
+            
+            weakSelf?.listenThread?.cancel()
+            weakSelf?.listenThread = nil
         }
     }
-    @objc private func disposeAction(){
-        autoreleasepool {
-            while isSettingUp{
-                while self.getDisposeBlocks().count > 0{
-                    let blocks = self.getDisposeBlocks()
-                    if let block = blocks.first as? ()->(){
-                        block()
-                    }
-                    self.removeDisposeBlocksFirst()
-                }
-            }
-        }
-    }
+    
 }
 
 extension Thread{

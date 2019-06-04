@@ -27,7 +27,7 @@ let kDefaultTimeout : TimeInterval = 2.0
 }
 
 class Ping : NSObject {
-
+    
     static var pingThreadCount = 0
     
     var pingThreadCount = 0
@@ -50,31 +50,33 @@ class Ping : NSObject {
     var timeoutTimers = [String:Timer]()
     var socketNum : Int32 = 0
     var isStopped = true
-
+    
     override init() {
         super.init()
-    
+        
         self.identifier = UInt16(truncatingIfNeeded: arc4random())
         Ping.pingThreadCount += 1
         pingThreadCount = Ping.pingThreadCount
-
-    }
-     func startPinging() {
-        self.isPinging = true
-    }
-     func stop() {
-        if isPinging,let stop = self.delegate?.stop{
-            self.isPinging = false
-            stop(self)
-        }
         
     }
+    func startPinging() {
+        self.isPinging = true
+    }
+    var mainQueue = DispatchQueue.main
+    func stop() {
+        mainQueue.async {
+            if self.isPinging,let stop = self.delegate?.stop{
+                self.isPinging = false
+                stop(self)
+            }
+        }
+    }
     
-     func send() {
+    func send() {
         sendPacket()
         pingThreadCount += 1
     }
-     func listenOnce() {
+    func listenOnce() {
         listenPacket()
         
     }
@@ -82,7 +84,7 @@ class Ping : NSObject {
         
         Ping.pingThreadCount -= 1
         
-//        NSLog(Ping.pingThreadCount.description)
+        //        NSLog("PingCount:"+Ping.pingThreadCount.description)
     }
     let INET6_ADDRSTRLEN = 64
     
@@ -90,7 +92,7 @@ class Ping : NSObject {
     static func icmp4HeaderOffsetInPacket(_ packet : Data) -> UInt{
         var result : UInt
         var ipPtr : IPHeader
-//    const struct IPHeader * ipPtr;
+        //    const struct IPHeader * ipPtr;
         var ipHeaderLength : size_t
         result = UInt(NSNotFound)
         if packet.count >= MemoryLayout<IPHeader>.size + MemoryLayout<ICMPHeader>.size{
@@ -105,7 +107,7 @@ class Ping : NSObject {
         }
         return result
     }
-    static func icmp4InPacket(packet:Data) -> ICMPHeader?{
+    static func icmp4InPacket(_ packet:Data) -> ICMPHeader?{
         var result : ICMPHeader? = nil
         var icmpHeaderOffset : UInt
         
@@ -120,7 +122,7 @@ class Ping : NSObject {
         return result
     }
     static func sourceAddressInPacket(_ packet:Data) ->String?{
-    // Returns the source address of the IP packet
+        // Returns the source address of the IP packet
         var ipPtr : UnsafePointer<IPHeader>
         if packet.count >= MemoryLayout<IPHeader>.size{
             ipPtr = packet.bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
@@ -146,7 +148,7 @@ class Ping : NSObject {
     // Returns true if the packet looks like a valid ping response packet destined
     // for us.
     enum kICMPv4Type : UInt8{
- 
+        
         case EchoRequest = 8
         case EchoReply   = 0
     }
@@ -163,18 +165,18 @@ class Ping : NSObject {
         var calculatedChecksum:UInt16
         
         icmpHeaderOffset = Ping.icmp4HeaderOffsetInPacket(packet)
-    
+        
         if icmpHeaderOffset != NSNotFound{
             let uInt8poiner = packet.bytes.bindMemory(to: UInt8.self, capacity: packet.count) + Int(icmpHeaderOffset)
             let pointer = UnsafeMutableRawPointer(mutating: uInt8poiner).bindMemory(to: ICMPHeader.self, capacity: packet.count - Int(icmpHeaderOffset))
-        
+            
             icmpPtr = pointer
-//    icmpPtr = (struct ICMPHeader *) (((uint8_t *)[packet mutableBytes]) + icmpHeaderOffset);
+            //    icmpPtr = (struct ICMPHeader *) (((uint8_t *)[packet mutableBytes]) + icmpHeaderOffset);
             receivedChecksum = icmpPtr.pointee.checksum
             icmpPtr.pointee.checksum  = 0
             calculatedChecksum = in_cksum(icmpPtr, packet.count - Int(icmpHeaderOffset))
             icmpPtr.pointee.checksum  = receivedChecksum
-    
+            
             if receivedChecksum == calculatedChecksum{
                 if icmpPtr.pointee.type == kICMPv4Type.EchoReply.rawValue, icmpPtr.pointee.code == 0 {
                     
@@ -194,7 +196,7 @@ class Ping : NSObject {
     func isValidPing6ResponsePacket(_ packet:Data)->Bool{
         var result = false
         var icmpPtr : UnsafePointer<ICMPHeader>
-
+        
         if packet.count >= MemoryLayout<ICMPHeader>.size {
             icmpPtr = packet.bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count)
             if icmpPtr.pointee.type == kICMPv4Type.EchoReply.rawValue,icmpPtr.pointee.code == 0{
@@ -206,11 +208,11 @@ class Ping : NSObject {
             }
         }
         return result
-    
+        
     }
     func isValidPingResponsePacket(_ packet: Data)->Bool{
         var result : Bool
-    
+        
         switch self.hostAddressFamily{
         case sa_family_t(AF_INET):
             result = self.isValidPing4ResponsePacket(packet)
@@ -225,7 +227,7 @@ class Ping : NSObject {
         return result
     }
     
-
+    
     func listenPacket(){
         weak var weakSelf = self
         var err : Int
@@ -253,11 +255,11 @@ class Ping : NSObject {
         //process the data we read.
         if bytesRead > 0 {
             var hoststr = CChar()
-//            char hoststr[INET6_ADDRSTRLEN];
+            //            char hoststr[INET6_ADDRSTRLEN];
             var sin : sockaddr_in = UnsafeMutableRawPointer(addrSockaddr).bindMemory(to: sockaddr_in.self, capacity: Int(addrLen)).pointee
             inet_ntop(Int32(sin.sin_family), &(sin.sin_addr), &hoststr, socklen_t(INET6_ADDRSTRLEN))
-//            struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
-//            inet_ntop(sin->sin_family, &(sin->sin_addr), hoststr, INET6_ADDRSTRLEN);
+            //            struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+            //            inet_ntop(sin->sin_family, &(sin->sin_addr), hoststr, INET6_ADDRSTRLEN);
             let host = String(utf8String: &hoststr)
             
             if(host == hostAddressString) { // only make sense where received packet comes from expected source
@@ -265,25 +267,25 @@ class Ping : NSObject {
                 let receiveDate = Date()
                 var packet = Data(bytes: buffer!, count: bytesRead)
                 
-//                assert((packet));
+                //                assert((packet));
                 
                 //complete the ping result
-//                const struct ICMPHeader *headerPointer;
+                //                const struct ICMPHeader *headerPointer;
                 var headerPointer : ICMPHeader?
                 
                 if sin.sin_family == AF_INET{
-                    headerPointer = Ping.icmp4InPacket(packet: packet)
+                    headerPointer = Ping.icmp4InPacket(packet)
                 } else {
                     headerPointer = packet.bytes.bindMemory(to: ICMPHeader.self, capacity: packet.count).pointee
                     
                 }
                 
                 let segNo = CFSwapInt16(headerPointer!.sequenceNumber)
-//                NSUInteger seqNo = (NSUInteger)OSSwapBigToHostInt16(headerPointer->sequenceNumber);
+                //                NSUInteger seqNo = (NSUInteger)OSSwapBigToHostInt16(headerPointer->sequenceNumber);
                 let key = segNo.description
-//                NSNumber *key = @(seqNo);
+                //                NSNumber *key = @(seqNo);
                 let pingResult =  self.pendingPings[key]?.copy()
-//                PingResult *pingResult = [(PingResult *)self.pendingPings[key] copy];
+                //                PingResult *pingResult = [(PingResult *)self.pendingPings[key] copy];
                 
                 if pingResult != nil{
                     
@@ -309,18 +311,18 @@ class Ping : NSObject {
                         let timer = self.timeoutTimers[key]
                         timer?.invalidate()
                         self.timeoutTimers.removeValue(forKey: key)
-                        DispatchQueue.main.async {
+                        mainQueue.async {
                             if let weakSelf = weakSelf{
                                 weakSelf.delegate?.ping?(weakSelf, didReceiveReplyWith: pingResult!)
                             }
                             
                         }
                     }else {
-                        pingResult?.pingStatus = .fail;
+                        pingResult?.pingStatus = .fail
                         
-                        DispatchQueue.main.async {
+                        mainQueue.async {
                             if let weakSelf = weakSelf{
-                                weakSelf.delegate?.ping?(weakSelf, didReceiveUnexpectedReplyWith: pingResult!)
+                                weakSelf.delegate?.ping?(weakSelf, didReceiveUnexpectedReplyWith: pingResult! )
                             }
                             
                         }
@@ -337,11 +339,11 @@ class Ping : NSObject {
             }
             
             if self.isStopped{
-                DispatchQueue.main.async {
+                mainQueue.async {
                     if let weakSelf = weakSelf{
                         weakSelf.delegate?.ping?(weakSelf, didFailWithError: NSError.init(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
                     }
-                   
+                    
                 }
             }
             self.stop()
@@ -349,11 +351,11 @@ class Ping : NSObject {
         free(buffer)
     }
     
-    func generateDataWithLength(length:Int) -> Data {
-    //create a buffer full of 7's of specified length
+    func generateDataWithLength(_ length:Int) -> Data {
+        //create a buffer full of 7's of specified length
         let tempBuffer = [UInt8].init(repeating: 7, count: length)
-//        memset(&tempBuffer, 7, Int(length))
-    
+        //        memset(&tempBuffer, 7, Int(length))
+        
         return Data(bytes: tempBuffer)
     }
     func pingPacketWithType(_ type: UInt8, _ payload:Data ,_ requiresChecksum:Bool)  -> NSData{
@@ -361,7 +363,7 @@ class Ping : NSObject {
         var icmpPtr : UnsafeMutablePointer<ICMPHeader>
         
         packet = NSMutableData(length: MemoryLayout<ICMPHeader>.size + payload.count)!
-    
+        
         icmpPtr = packet.mutableBytes.bindMemory(to: ICMPHeader.self, capacity: packet.length)
         icmpPtr.pointee.type = type
         icmpPtr.pointee.code = 0
@@ -376,7 +378,7 @@ class Ping : NSObject {
             icmpPtr.pointee.checksum = in_cksum(packet.bytes, packet.length)
         }
         return packet
-    
+        
     }
     func sendPacket(){
         if self.isPinging {
@@ -385,9 +387,9 @@ class Ping : NSObject {
             var err :Int
             var packet: NSData = NSData()
             var bytesSent:ssize_t
-    
+            
             // Construct the ping packet.
-            let payload = self.generateDataWithLength(length: self.payloadSize)
+            let payload = self.generateDataWithLength(self.payloadSize)
             
             let hostAddressFamily = self.hostAddressFamily
             switch hostAddressFamily{
@@ -401,7 +403,7 @@ class Ping : NSObject {
             default:
                 break
             }
-    
+            
             let newPingResult = PingResult()
             
             // Send the packet.
@@ -433,7 +435,7 @@ class Ping : NSObject {
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
                 
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
+                mainQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
                     weakSelf?.pendingPings.removeValue(forKey: key)
                 }
                 
@@ -442,7 +444,7 @@ class Ping : NSObject {
                 //add a timeout timer
                 let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
                     newPingResult.pingStatus = .fail
-                    DispatchQueue.main.async {
+                    self.mainQueue.async {
                         weakSelf?.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
                     }
                     weakSelf?.timeoutTimers.removeValue(forKey: key)
@@ -482,28 +484,28 @@ class Ping : NSObject {
     }
     
     func setup(_ callBack: @escaping (_ success:Bool,_ error:Error?)->Void) {
-    //error out of its already setup
+        //error out of its already setup
         if self.isReady{
             if self.debug{
                 NSLog("GBPing: Can't setup, already setup.")
             }
-            DispatchQueue.main.async {
+            mainQueue.async {
                 callBack(false,nil)
             }
             return
         }
-    
-    //error out if no host is set
+        
+        //error out if no host is set
         if self.host == nil{
             if self.debug{
                 NSLog("GBPing: set host before attempting to start.")
             }
-            DispatchQueue.main.async {
+            mainQueue.async {
                 callBack(false,nil)
             }
             return
         }
-    
+        
         //set up data structs
         self.nextSequenceNumber = 0
         
@@ -532,7 +534,7 @@ class Ping : NSObject {
             self.stop()
             
             //notify about error and return
-            DispatchQueue.main.async {
+            mainQueue.async {
                 callBack(false,error)
             }
             if hostRef != nil{
@@ -575,7 +577,7 @@ class Ping : NSObject {
         if !resolved.boolValue {
             //stop
             self.stop()
-            DispatchQueue.main.async {
+            mainQueue.async {
                 callBack(false, NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorHostNotFound.rawValue), userInfo: nil))
             }
             
@@ -609,7 +611,7 @@ class Ping : NSObject {
         if err != 0{
             //clean up so far
             self.stop()
-            DispatchQueue.main.async {
+            mainQueue.async {
                 callBack(false, NSError(domain: NSPOSIXErrorDomain as String, code: err, userInfo: nil))
             }
             
@@ -624,20 +626,20 @@ class Ping : NSObject {
         
         //we are ready now
         self.isReady = true
-        DispatchQueue.main.async {
+        mainQueue.async {
             callBack(true,nil)
         }
         self.isStopped = true
     }
     
-
+    
 }
 
 extension Data{
     var bytes : UnsafeRawPointer{
         get{
-//            let bytes = [UInt8](self)
-//            return UnsafeRawPointer(bytes)
+            //            let bytes = [UInt8](self)
+            //            return UnsafeRawPointer(bytes)
             return (self as NSData).bytes
         }
     }
