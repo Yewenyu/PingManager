@@ -489,9 +489,9 @@ class Ping : NSObject {
             if self.debug{
                 NSLog("GBPing: Can't setup, already setup.")
             }
-            mainQueue.async {
+//            mainQueue.async {
                 callBack(false,nil)
-            }
+//            }
             return
         }
         
@@ -500,9 +500,9 @@ class Ping : NSObject {
             if self.debug{
                 NSLog("GBPing: set host before attempting to start.")
             }
-            mainQueue.async {
+//            mainQueue.async {
                 callBack(false,nil)
-            }
+//            }
             return
         }
         
@@ -534,9 +534,9 @@ class Ping : NSObject {
             self.stop()
             
             //notify about error and return
-            mainQueue.async {
+//            mainQueue.async {
                 callBack(false,error)
-            }
+//            }
             if hostRef != nil{
                 
             }
@@ -577,9 +577,9 @@ class Ping : NSObject {
         if !resolved.boolValue {
             //stop
             self.stop()
-            mainQueue.async {
+//            mainQueue.async {
                 callBack(false, NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorHostNotFound.rawValue), userInfo: nil))
-            }
+//            }
             
             return
         }
@@ -611,9 +611,9 @@ class Ping : NSObject {
         if err != 0{
             //clean up so far
             self.stop()
-            mainQueue.async {
+//            mainQueue.async {
                 callBack(false, NSError(domain: NSPOSIXErrorDomain as String, code: err, userInfo: nil))
-            }
+//            }
             
             return
         }
@@ -626,9 +626,9 @@ class Ping : NSObject {
         
         //we are ready now
         self.isReady = true
-        mainQueue.async {
+//        mainQueue.async {
             callBack(true,nil)
-        }
+//        }
         self.isStopped = true
     }
     
