@@ -57,6 +57,8 @@ class PingMannager : NSObject{
     }
     @objc func add(_ ping:Ping){
         ping.mainQueue = mainQueue
+        ping.sendQueue = sendQueue
+        ping.listenQueue = listenQueue
         pings.append(ping)
     }
     

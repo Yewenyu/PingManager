@@ -63,6 +63,8 @@ class Ping : NSObject {
         self.isPinging = true
     }
     var mainQueue = DispatchQueue.main
+    var sendQueue = DispatchQueue(label: "sendQueue")
+    var listenQueue = DispatchQueue(label: "listenQueue")
     func stop() {
         mainQueue.async {
             if self.isPinging,let stop = self.delegate?.stop{
@@ -308,7 +310,7 @@ class Ping : NSObject {
                         }
                         
                         pingResult?.pingStatus = .success
-                        mainQueue.async {
+                        sendQueue.async {
                             let timer = self.timeoutTimers[key]
                             timer?.invalidate()
                             self.timeoutTimers.removeValue(forKey: key)
@@ -428,10 +430,7 @@ class Ping : NSObject {
                 
                 //add it to pending pings
                 let key = self.nextSequenceNumber.description
-                
-                mainQueue.async {
-                    self.pendingPings[key] = newPingResult
-                }
+                self.pendingPings[key] = newPingResult
                 
                 //increment sequence number
                 self.nextSequenceNumber += 1
@@ -441,7 +440,7 @@ class Ping : NSObject {
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
                 
-                mainQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
+                listenQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
                     weakSelf?.pendingPings.removeValue(forKey: key)
                 }
                 
@@ -452,6 +451,9 @@ class Ping : NSObject {
                     newPingResult.pingStatus = .fail
                     self.mainQueue.async {
                         weakSelf?.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
+                        
+                    }
+                    self.sendQueue.async {
                         weakSelf?.timeoutTimers.removeValue(forKey: key)
                     }
                     
@@ -496,9 +498,7 @@ class Ping : NSObject {
             if self.debug{
                 NSLog("GBPing: Can't setup, already setup.")
             }
-//            mainQueue.async {
-                callBack(false,nil)
-//            }
+            callBack(false,nil)
             return
         }
         
@@ -507,9 +507,7 @@ class Ping : NSObject {
             if self.debug{
                 NSLog("GBPing: set host before attempting to start.")
             }
-//            mainQueue.async {
-                callBack(false,nil)
-//            }
+            callBack(false,nil)
             return
         }
         
@@ -541,9 +539,7 @@ class Ping : NSObject {
             self.stop()
             
             //notify about error and return
-//            mainQueue.async {
-                callBack(false,error)
-//            }
+            callBack(false,error)
             if hostRef != nil{
                 
             }
@@ -584,9 +580,7 @@ class Ping : NSObject {
         if !resolved.boolValue {
             //stop
             self.stop()
-//            mainQueue.async {
-                callBack(false, NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorHostNotFound.rawValue), userInfo: nil))
-//            }
+            callBack(false, NSError(domain: kCFErrorDomainCFNetwork as String, code: Int(CFNetworkErrors.cfHostErrorHostNotFound.rawValue), userInfo: nil))
             
             return
         }
@@ -618,9 +612,9 @@ class Ping : NSObject {
         if err != 0{
             //clean up so far
             self.stop()
-//            mainQueue.async {
-                callBack(false, NSError(domain: NSPOSIXErrorDomain as String, code: err, userInfo: nil))
-//            }
+            //            mainQueue.async {
+            callBack(false, NSError(domain: NSPOSIXErrorDomain as String, code: err, userInfo: nil))
+            //            }
             
             return
         }
@@ -633,9 +627,9 @@ class Ping : NSObject {
         
         //we are ready now
         self.isReady = true
-//        mainQueue.async {
-            callBack(true,nil)
-//        }
+        //        mainQueue.async {
+        callBack(true,nil)
+        //        }
         self.isStopped = true
     }
     
