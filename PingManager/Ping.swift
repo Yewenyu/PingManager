@@ -308,9 +308,12 @@ class Ping : NSObject {
                         }
                         
                         pingResult?.pingStatus = .success
-                        let timer = self.timeoutTimers[key]
-                        timer?.invalidate()
-                        self.timeoutTimers.removeValue(forKey: key)
+                        mainQueue.async {
+                            let timer = self.timeoutTimers[key]
+                            timer?.invalidate()
+                            self.timeoutTimers.removeValue(forKey: key)
+                        }
+                        
                         mainQueue.async {
                             if let weakSelf = weakSelf{
                                 weakSelf.delegate?.ping?(weakSelf, didReceiveReplyWith: pingResult!)
@@ -425,7 +428,10 @@ class Ping : NSObject {
                 
                 //add it to pending pings
                 let key = self.nextSequenceNumber.description
-                self.pendingPings[key] = newPingResult
+                
+                mainQueue.async {
+                    self.pendingPings[key] = newPingResult
+                }
                 
                 //increment sequence number
                 self.nextSequenceNumber += 1
@@ -446,8 +452,9 @@ class Ping : NSObject {
                     newPingResult.pingStatus = .fail
                     self.mainQueue.async {
                         weakSelf?.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
+                        weakSelf?.timeoutTimers.removeValue(forKey: key)
                     }
-                    weakSelf?.timeoutTimers.removeValue(forKey: key)
+                    
                 }), selector: #selector(BlockOperation.main), userInfo: nil, repeats: false)
                 RunLoop.main.add(timeoutTimer, forMode: .commonModes)
                 
