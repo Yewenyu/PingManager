@@ -42,6 +42,7 @@ class PingResult: NSObject {
     required override init() {
         super.init()
     }
+    
     func copy() -> Self {
         let newResult = type(of: self).init()
         newResult.sequenceNumber = sequenceNumber
