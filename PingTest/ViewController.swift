@@ -41,7 +41,7 @@ class ViewController: UIViewController {
 //        }
     }
     @IBAction func stopAction(_ button:UIButton){
-        PingMannager.shared.stopPing()
+        PingManager.shared.stopPing()
     }
     @IBAction func startAction(_ button:UIButton){
         let ipContent = ipsView.text
@@ -50,15 +50,15 @@ class ViewController: UIViewController {
                 let ping = Ping()
                 ping.delegate = self
                 ping.host = ip
-                PingMannager.shared.add(ping)
+                PingManager.shared.add(ping)
             }
         }
         self.timeout = TimeInterval(self.timeoutTextField.text ?? self.timeout.description)!
         self.period = TimeInterval(self.periodTextField.text ?? self.period.description)!
-        PingMannager.shared.setup {
-            PingMannager.shared.timeout = self.timeout
-            PingMannager.shared.pingPeriod = self.period
-            PingMannager.shared.startPing()
+        PingManager.shared.setup {
+            PingManager.shared.timeout = self.timeout
+            PingManager.shared.pingPeriod = self.period
+            PingManager.shared.startPing()
         }
         
     }

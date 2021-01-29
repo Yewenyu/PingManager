@@ -28,30 +28,30 @@ let kDefaultTimeout : TimeInterval = 2.0
 
 public class Ping : NSObject {
     
-    static var pingThreadCount = 0
+    public static var pingThreadCount = 0
     
-    var pingThreadCount = 0
-    weak var delegate : PingDelegate?
+    public var pingThreadCount = 0
+    public weak var delegate : PingDelegate?
     
-    var host : String?
-    var pingPeriod : TimeInterval = 1
-    var timeout : TimeInterval = 1
-    var payloadSize : Int = kDefaultPayloadSize
-    var ttl : UInt = 0
+    public var host : String?
+    public var pingPeriod : TimeInterval = 1
+    public var timeout : TimeInterval = 1
+    public var payloadSize : Int = kDefaultPayloadSize
+    public var ttl : UInt = 0
     
-    var isPinging : Bool = false
-    var isReady : Bool = false
-    var debug : Bool = false
-    var hostAddressString : String?
-    var pendingPings = [String:PingResult]()
-    var hostAddress : Data?
-    var identifier : UInt16 = 0
-    var nextSequenceNumber : UInt = 0
-    var timeoutTimers = [String:Timer]()
-    var socketNum : Int32 = 0
-    var isStopped = true
+    public var isPinging : Bool = false
+    public var isReady : Bool = false
+    public var debug : Bool = false
+    public var hostAddressString : String?
+    public var pendingPings = [String:PingResult]()
+    public var hostAddress : Data?
+    public var identifier : UInt16 = 0
+    public var nextSequenceNumber : UInt = 0
+    public var timeoutTimers = [String:Timer]()
+    public var socketNum : Int32 = 0
+    public var isStopped = true
     
-    public override init() {
+    override init() {
         super.init()
         
         self.identifier = UInt16(truncatingIfNeeded: arc4random())
@@ -59,13 +59,13 @@ public class Ping : NSObject {
         pingThreadCount = Ping.pingThreadCount
         
     }
-    func startPinging() {
+    public func startPinging() {
         self.isPinging = true
     }
     var mainQueue = DispatchQueue.main
     var sendQueue = DispatchQueue(label: "sendQueue")
     var listenQueue = DispatchQueue(label: "listenQueue")
-    func stop() {
+    public func stop() {
         mainQueue.async {
             if self.isPinging,let stop = self.delegate?.stop{
                 self.isPinging = false
@@ -74,11 +74,11 @@ public class Ping : NSObject {
         }
     }
     
-    func send() {
+    public func send() {
         sendPacket()
         pingThreadCount += 1
     }
-    func listenOnce() {
+    public func listenOnce() {
         listenPacket()
         
     }
@@ -496,7 +496,7 @@ public class Ping : NSObject {
         }
     }
     
-    func setup(_ callBack: @escaping (_ success:Bool,_ error:Error?)->Void) {
+    public func setup(_ callBack: @escaping (_ success:Bool,_ error:Error?)->Void) {
         //error out of its already setup
         if self.isReady{
             if self.debug{

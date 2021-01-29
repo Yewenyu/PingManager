@@ -8,14 +8,14 @@
 
 import Foundation
 
-public class PingMannager : NSObject{
-    @objc static let shared = PingMannager()
+public class PingManager : NSObject{
+    @objc public static let shared = PingManager()
     let sendQueue = DispatchQueue(label: "NewPingSendQueue")
     let readyGroup = DispatchGroup()
     let listenQueue = DispatchQueue(label: "NewPinglistenQueue")
     let mainQueue = DispatchQueue(label: "NewPingMainQueue")
     
-    var isMemoryWarning : Bool{
+    public var isMemoryWarning : Bool{
         set{
             if newValue == true{
                 lastMemoryWarningTime = Date().timeIntervalSince1970
@@ -38,31 +38,27 @@ public class PingMannager : NSObject{
     }
     var stopPingDuration : TimeInterval = 60
     var lastMemoryWarningTime : TimeInterval = 0
-    
-    var sendThread : Thread?
-    var listenThread :Thread?
-    var setupThread : Thread?
-    var pings = [Ping]()
-    var disposeBlocks = [Any]()
+
+    public var pings = [Ping]()
     
     var isSettingUp = false
     var isPinging = false
-    var pingPeriod : TimeInterval = 1
-    var timeout : TimeInterval = 1{
+    public var pingPeriod : TimeInterval = 1
+    public var timeout : TimeInterval = 1{
         didSet{
             for ping in pings{
                 ping.timeout = timeout
             }
         }
     }
-    @objc func add(_ ping:Ping){
+    @objc public func add(_ ping:Ping){
         ping.mainQueue = mainQueue
         ping.sendQueue = sendQueue
         ping.listenQueue = listenQueue
         pings.append(ping)
     }
     
-    func setup(_ callBack:(()->())? = nil){
+    public func setup(_ callBack:(()->())? = nil){
         
         var newPings = self.pings
         let pings = self.pings
@@ -93,14 +89,14 @@ public class PingMannager : NSObject{
         }
         
     }
-    func startPing(){
+    public func startPing(){
         if !self.isPinging{
             self.isPinging = true
             send()
             listen()
         }
     }
-    func stopPing(){
+    public func stopPing(){
         mainQueue.async {
             if self.isPinging{
                 self.isPinging = false
