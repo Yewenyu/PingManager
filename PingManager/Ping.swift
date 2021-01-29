@@ -1,5 +1,5 @@
 //
-//  NewGBPing.swift
+//  NewPing.swift
 //  ThreeTab
 //
 //  Created by wenyu on 2018/11/14.
@@ -482,7 +482,7 @@ class Ping : NSObject {
                     
                     //little log
                     if (self.debug) {
-                        NSLog("GBPing: failed to send packet with error code: %d", err)
+                        NSLog("Ping: failed to send packet with error code: %d", err)
                     }
                     
                     //change status
@@ -499,7 +499,7 @@ class Ping : NSObject {
         //error out of its already setup
         if self.isReady{
             if self.debug{
-                NSLog("GBPing: Can't setup, already setup.")
+                NSLog("Ping: Can't setup, already setup.")
             }
             callBack(false,nil)
             return
@@ -508,7 +508,7 @@ class Ping : NSObject {
         //error out if no host is set
         if self.host == nil{
             if self.debug{
-                NSLog("GBPing: set host before attempting to start.")
+                NSLog("Ping: set host before attempting to start.")
             }
             callBack(false,nil)
             return

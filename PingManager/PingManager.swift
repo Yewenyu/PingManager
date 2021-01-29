@@ -10,10 +10,10 @@ import UIKit
 
 class PingMannager : NSObject{
     @objc static let shared = PingMannager()
-    let sendQueue = DispatchQueue(label: "NewGBPingSendQueue")
+    let sendQueue = DispatchQueue(label: "NewPingSendQueue")
     let readyGroup = DispatchGroup()
-    let listenQueue = DispatchQueue(label: "NewGBPinglistenQueue")
-    let mainQueue = DispatchQueue(label: "NewGBPingMainQueue")
+    let listenQueue = DispatchQueue(label: "NewPinglistenQueue")
+    let mainQueue = DispatchQueue(label: "NewPingMainQueue")
     
     var isMemoryWarning : Bool{
         set{
