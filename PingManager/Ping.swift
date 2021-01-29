@@ -6,7 +6,7 @@
 //  Copyright © 2018年 ThreeTab. All rights reserved.
 //
 
-import UIKit
+import Foundation
 
 let kPendingPingsCleanupGrace : TimeInterval = 1.0
 let kDefaultPayloadSize = 56
@@ -461,7 +461,8 @@ class Ping : NSObject {
                     }
                     
                 }), selector: #selector(BlockOperation.main), userInfo: nil, repeats: false)
-                RunLoop.main.add(timeoutTimer, forMode: .commonModes)
+                
+                RunLoop.main.add(timeoutTimer, forMode: .common)
                 
                 self.timeoutTimers[key] = timeoutTimer
                 //keep a local ref to it

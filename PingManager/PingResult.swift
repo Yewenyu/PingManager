@@ -6,7 +6,7 @@
 //  Copyright © 2018年 wenyu. All rights reserved.
 //
 
-import UIKit
+import Foundation
 
 enum PingStatus{
     case pending

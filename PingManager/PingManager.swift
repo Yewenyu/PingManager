@@ -6,7 +6,7 @@
 //  Copyright © 2018年 ThreeTab. All rights reserved.
 //
 
-import UIKit
+import Foundation
 
 class PingMannager : NSObject{
     @objc static let shared = PingMannager()
