@@ -39,7 +39,7 @@ public class PingResult: NSObject {
     }
     public var pingStatus = PingStatus.pending
     
-    required override init() {
+    public required override init() {
         super.init()
     }
     

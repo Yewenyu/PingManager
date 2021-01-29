@@ -51,7 +51,7 @@ public class Ping : NSObject {
     public var socketNum : Int32 = 0
     public var isStopped = true
     
-    override init() {
+    public override init() {
         super.init()
         
         self.identifier = UInt16(truncatingIfNeeded: arc4random())
