@@ -14,7 +14,7 @@ let kDefaultTTL = 49
 let kDefaultPingPeriod : TimeInterval = 1.0
 let kDefaultTimeout : TimeInterval = 2.0
 
-@objc protocol PingDelegate{
+@objc public protocol PingDelegate{
     
     
     @objc optional func ping(_ pinger: Ping, didFailWithError error: Error)
@@ -26,7 +26,7 @@ let kDefaultTimeout : TimeInterval = 2.0
     func stop(_ ping:Ping)
 }
 
-class Ping : NSObject {
+public class Ping : NSObject {
     
     static var pingThreadCount = 0
     
@@ -51,7 +51,7 @@ class Ping : NSObject {
     var socketNum : Int32 = 0
     var isStopped = true
     
-    override init() {
+    public override init() {
         super.init()
         
         self.identifier = UInt16(truncatingIfNeeded: arc4random())

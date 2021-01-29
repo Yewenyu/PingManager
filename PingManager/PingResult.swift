@@ -8,28 +8,28 @@
 
 import Foundation
 
-enum PingStatus{
+public enum PingStatus{
     case pending
     case success
     case fail
 }
 
-class PingResult: NSObject {
+public class PingResult: NSObject {
 
-    var sequenceNumber : UInt = 0
-    var payloadSize : UInt = 0
-    var ttl : UInt = 0
-    var host : String?
-    var sendDate : Date?
-    var receiveDate : Date?{
+    public var sequenceNumber : UInt = 0
+    public var payloadSize : UInt = 0
+    public var ttl : UInt = 0
+    public var host : String?
+    public var sendDate : Date?
+    public var receiveDate : Date?{
         didSet{
             if let receiveDate = receiveDate?.timeIntervalSince1970,let sendDate = sendDate?.timeIntervalSince1970{
                 time = receiveDate - sendDate
             }
         }
     }
-    var time : TimeInterval = 0
-    var rtt : TimeInterval{
+    public var time : TimeInterval = 0
+    public var rtt : TimeInterval{
         get{
             if let sendDate = sendDate{
                 return receiveDate?.timeIntervalSince(sendDate) ?? 0
@@ -37,7 +37,7 @@ class PingResult: NSObject {
             return 0
         }
     }
-    var pingStatus = PingStatus.pending
+    public var pingStatus = PingStatus.pending
     
     required override init() {
         super.init()

@@ -8,7 +8,7 @@
 
 import Foundation
 
-class PingMannager : NSObject{
+public class PingMannager : NSObject{
     @objc static let shared = PingMannager()
     let sendQueue = DispatchQueue(label: "NewPingSendQueue")
     let readyGroup = DispatchGroup()
