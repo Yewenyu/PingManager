@@ -159,7 +159,7 @@ class Ping : NSObject {
         case EchoReply   = 129
     }
     func isValidPing4ResponsePacket(_ packet : Data) -> Bool{
-        var packet = packet
+        let packet = packet
         var result = false
         var icmpHeaderOffset : UInt
         var icmpPtr : UnsafeMutablePointer<ICMPHeader>
@@ -231,21 +231,24 @@ class Ping : NSObject {
     
     
     func listenPacket(){
+        
+        let kBufferSize = 65535
+        guard let buffer = malloc(kBufferSize) else {
+            self.delegate?.ping?(self, didFailWithError: NSError(domain: "", code: -1, userInfo: nil) as Error)
+            return
+        }
         weak var weakSelf = self
         var err : Int
-        var ss = sockaddr_storage()
-        let addr = UnsafeMutablePointer<sockaddr_storage>(&ss)
+        var ss = [sockaddr_storage()]
         var addrLen : socklen_t
         var bytesRead : ssize_t
-        let kBufferSize = 65535
-        let buffer = malloc(kBufferSize)
         
-        
-        assert((buffer != nil))
         
         //read the data.
         addrLen = socklen_t(MemoryLayout<sockaddr_storage>.size)
-        let addrSockaddr = UnsafeMutableRawPointer(addr).bindMemory(to: sockaddr.self, capacity: Int(addrLen))
+        
+        
+        let addrSockaddr = ss.withUnsafeMutableBytes{$0.baseAddress}.unsafelyUnwrapped.bindMemory(to: sockaddr.self, capacity: Int(addrLen))
         
         
         bytesRead = recvfrom(self.socketNum, buffer, kBufferSize, 0, addrSockaddr, &addrLen)
@@ -267,7 +270,7 @@ class Ping : NSObject {
             if(host == hostAddressString) { // only make sense where received packet comes from expected source
                 
                 let receiveDate = Date()
-                var packet = Data(bytes: buffer!, count: bytesRead)
+                let packet = Data(bytes: buffer, count: bytesRead)
                 
                 //                assert((packet));
                 

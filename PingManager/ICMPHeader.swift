@@ -69,7 +69,8 @@ func in_cksum(_ buffer:UnsafeRawPointer, _ bufferLen:size_t) -> UInt16
             uc.removeLast(uc.count - 2)
             uc[1] = 0
         }
-        let us = UnsafeRawPointer(uc).bindMemory(to: UInt16.self, capacity: MemoryLayout<UInt16>.size).pointee
+        
+        let us = uc.withUnsafeBytes{$0.baseAddress}.unsafelyUnwrapped.bindMemory(to: UInt16.self, capacity: MemoryLayout<UInt16>.size).pointee
         
         sum += UInt32(us)
     }
