@@ -1,11 +1,11 @@
 Pod::Spec.new do |s|
   s.name        = "PingManager"
-  s.version     = "1.0.0"
+  s.version     = "0.1.0"
   s.summary     = "Ping multiple domains simultaneously"
   s.homepage    = "https://github.com/Yewenyu/PingManager"
-  s.license     = { :type => "Apache License, Version 2.0" }
+  s.license     = { :type => "MIT" }
   s.author     = "no"
-  s.module_name  = 'Socket'
+  s.module_name  = 'PingManager'
   s.swift_version = '4.2'
   s.requires_arc = true
   s.osx.deployment_target = "10.11"
