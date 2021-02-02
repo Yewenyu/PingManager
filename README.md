@@ -23,9 +23,9 @@ for host in hostArray{
    PingMannager.shared.add(ping)
 }
 PingMannager.shared.setup {
-   PingMannager.shared.timeout = self.timeout
-   PingMannager.shared.pingPeriod = self.period
-   PingMannager.shared.startPing()
+   $0.timeout = self.timeout
+   $0.pingPeriod = self.period
+   $0.startPing()
 }
 ```
 
