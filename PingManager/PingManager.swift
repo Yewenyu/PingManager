@@ -57,6 +57,18 @@ public class PingManager : NSObject{
         ping.listenQueue = listenQueue
         pings.append(ping)
     }
+    @objc public func add(pings:[Ping]){
+        pings.forEach{
+            add($0)
+        }
+    }
+    @objc public func add(hosts:[String],delegate:PingDelegate? = nil){
+        let pings = hosts.map{
+            Ping($0).Delegate(delegate)
+        }
+        add(pings: pings)
+    }
+    
     
     public func setup(_ setupBlock:((PingManager)->())? = nil){
         
@@ -161,6 +173,7 @@ public class PingManager : NSObject{
     }
     
 }
+
 
 extension Thread{
     

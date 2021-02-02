@@ -54,17 +54,32 @@ public class Ping : NSObject {
     public override init() {
         super.init()
         
+        initValue()
+
+    }
+    public init(_ host:String){
+        super.init()
+        initValue()
+        self.host = host
+    }
+    private func initValue(){
         self.identifier = UInt16(truncatingIfNeeded: arc4random())
         Ping.pingThreadCount += 1
         pingThreadCount = Ping.pingThreadCount
-        
     }
+    
+    
     public func startPinging() {
         self.isPinging = true
     }
     var mainQueue = DispatchQueue.main
     var sendQueue = DispatchQueue(label: "sendQueue")
     var listenQueue = DispatchQueue(label: "listenQueue")
+    
+    func Delegate(_ delegate:PingDelegate?) -> Ping{
+        self.delegate = delegate
+        return self
+    }
     public func stop() {
         mainQueue.async {
             if self.isPinging,let stop = self.delegate?.stop{
