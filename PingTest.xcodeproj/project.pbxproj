@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0439651025C920C500F4216A /* PingManager.podspec in Resources */ = {isa = PBXBuildFile; fileRef = 0439650F25C920C500F4216A /* PingManager.podspec */; };
 		27143B3B21A0507300587976 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B3A21A0507300587976 /* AppDelegate.swift */; };
 		27143B3D21A0507300587976 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27143B3C21A0507300587976 /* ViewController.swift */; };
 		27143B4021A0507300587976 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27143B3E21A0507300587976 /* Main.storyboard */; };
@@ -19,6 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0439650F25C920C500F4216A /* PingManager.podspec */ = {isa = PBXFileReference; lastKnownFileType = file; path = PingManager.podspec; sourceTree = SOURCE_ROOT; };
 		27143B3721A0507300587976 /* PingTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PingTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		27143B3A21A0507300587976 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		27143B3C21A0507300587976 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 		27143B3921A0507300587976 /* PingTest */ = {
 			isa = PBXGroup;
 			children = (
+				0439650F25C920C500F4216A /* PingManager.podspec */,
 				27143B3A21A0507300587976 /* AppDelegate.swift */,
 				27143B3C21A0507300587976 /* ViewController.swift */,
 				27143B4C21A0517200587976 /* PingManager */,
@@ -143,6 +146,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0439651025C920C500F4216A /* PingManager.podspec in Resources */,
 				27143B4521A0507C00587976 /* LaunchScreen.storyboard in Resources */,
 				27143B4221A0507C00587976 /* Assets.xcassets in Resources */,
 				27143B4021A0507300587976 /* Main.storyboard in Resources */,
