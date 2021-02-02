@@ -55,10 +55,12 @@ class ViewController: UIViewController {
         }
         self.timeout = TimeInterval(self.timeoutTextField.text ?? self.timeout.description)!
         self.period = TimeInterval(self.periodTextField.text ?? self.period.description)!
+        let timeout = self.timeout
+        let period = self.period
         PingManager.shared.setup {
-            PingManager.shared.timeout = self.timeout
-            PingManager.shared.pingPeriod = self.period
-            PingManager.shared.startPing()
+            $0.timeout = timeout
+            $0.pingPeriod = period
+            $0.startPing()
         }
         
     }

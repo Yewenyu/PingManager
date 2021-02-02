@@ -58,13 +58,13 @@ public class PingManager : NSObject{
         pings.append(ping)
     }
     
-    public func setup(_ callBack:(()->())? = nil){
+    public func setup(_ setupBlock:((PingManager)->())? = nil){
         
         var newPings = self.pings
         let pings = self.pings
-        weak var weakSelf = self
         
-        mainQueue.async {
+        mainQueue.async {[weak self] in
+            guard let self = self else{return}
             for ping in pings{
                 weak var weakPing = ping
                 let setupBlock = {()->() in
@@ -82,10 +82,9 @@ public class PingManager : NSObject{
                 }
                 setupBlock()
             }
-            weakSelf?.isSettingUp = false
-            
-            weakSelf?.pings = newPings
-            callBack?()
+            self.isSettingUp = false
+            self.pings = newPings
+            setupBlock?(self)
         }
         
     }
