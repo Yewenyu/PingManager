@@ -73,8 +73,6 @@ public class Ping : NSObject {
         self.isPinging = true
     }
     var mainQueue = DispatchQueue.main
-    var sendQueue = DispatchQueue(label: "sendQueue")
-    var listenQueue = DispatchQueue(label: "listenQueue")
     
     func Delegate(_ delegate:PingDelegate?) -> Ping{
         self.delegate = delegate
@@ -328,13 +326,11 @@ public class Ping : NSObject {
                         }
                         
                         pingResult?.pingStatus = .success
-                        sendQueue.async {
+                        
+                        mainQueue.async {
                             let timer = self.timeoutTimers[key]
                             timer?.invalidate()
                             self.timeoutTimers.removeValue(forKey: key)
-                        }
-                        
-                        mainQueue.async {
                             if let weakSelf = weakSelf{
                                 weakSelf.delegate?.ping?(weakSelf, didReceiveReplyWith: pingResult!)
                             }
@@ -458,20 +454,22 @@ public class Ping : NSObject {
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
                 
-                listenQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
+                mainQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
                     weakSelf?.pendingPings.removeValue(forKey: key)
                 }
                 
                 
                 //add a timeout timer
                 //add a timeout timer
-                let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {
+                let timeoutTimer = Timer(timeInterval: self.timeout, target: BlockOperation(block: {[weak self] in
+                    
+                    guard let self = self else{return}
                     newPingResult.pingStatus = .fail
                     self.mainQueue.async {
                         weakSelf?.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
                         
                     }
-                    self.sendQueue.async {
+                    self.mainQueue.async {
                         weakSelf?.timeoutTimers.removeValue(forKey: key)
                     }
                     
