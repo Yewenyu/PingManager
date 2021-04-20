@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name        = "PingManager"
-  s.version     = "0.1.5"
+  s.version     = "0.1.6"
   s.summary     = "Ping multiple domains simultaneously"
   s.homepage    = "https://github.com/Yewenyu/PingManager"
   s.license     = { :type => "MIT" }
