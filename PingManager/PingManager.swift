@@ -10,9 +10,7 @@ import Foundation
 
 public class PingManager : NSObject{
     @objc public static let shared = PingManager()
-    let sendQueue = DispatchQueue(label: "NewPingSendQueue")
     let readyGroup = DispatchGroup()
-    let listenQueue = DispatchQueue(label: "NewPinglistenQueue")
     let mainQueue = DispatchQueue(label: "NewPingMainQueue")
     
     public var isMemoryWarning : Bool{
@@ -52,7 +50,6 @@ public class PingManager : NSObject{
         }
     }
     @objc public func add(_ ping:Ping){
-        ping.mainQueue = mainQueue
         pings.append(ping)
     }
     @objc public func add(pings:[Ping]){
@@ -103,6 +100,7 @@ public class PingManager : NSObject{
             self.isPinging = true
             send()
             listen()
+            
         }
     }
     public func stopPing(){
@@ -118,28 +116,20 @@ public class PingManager : NSObject{
         
     }
     private func send(){
-        let pingManager =  self
-        mainQueue.async {
+        mainQueue.async {[weak self] in
+            guard let pingManager =  self else {return}
+            let time = pingManager.pingPeriod
             if pingManager.isPinging == true{
                 pingManager.pings.removeAll(where: { (ping) -> Bool in
                     return ping.isPinging == false
                 })
                 if pingManager.pings.count > 0 {
                     let pings = [Ping](pingManager.pings)
-                    pingManager.sendQueue.async {
-                        autoreleasepool{
-                            let runUntil = CFAbsoluteTimeGetCurrent() + (pingManager.pingPeriod)
-                            for ping in pings{
-                                ping.send()
-                            }
-                            var time : TimeInterval = 0;
-                            while (runUntil > time) {
-                                let runUntilDate = Date(timeIntervalSinceReferenceDate: runUntil)
-                                RunLoop.current.run(until: runUntilDate)
-                                time = CFAbsoluteTimeGetCurrent()
-                            }
-                            pingManager.send()
-                        }
+                    for ping in pings{
+                        ping.send()
+                    }
+                    pingManager.mainQueue.asyncAfter(deadline: .now() + time) {
+                        pingManager.send()
                     }
                 }
                 
@@ -148,23 +138,21 @@ public class PingManager : NSObject{
         
     }
     private func listen(){
-        let pingManager =  self
-        mainQueue.async {
+        
+        mainQueue.async {[weak self] in
+            guard let pingManager =  self else{return}
             if pingManager.isPinging == true{
                 pingManager.pings.removeAll(where: { (ping) -> Bool in
                     return ping.isPinging == false
                 })
                 if pingManager.pings.count > 0 {
                     let pings = [Ping](pingManager.pings)
-                    pingManager.listenQueue.async {
-                        autoreleasepool{
-                            for ping in pings{
-                                ping.listenOnce()
-                            }
-                            pingManager.listen()
-                        }
+                    for ping in pings{
+                        ping.listenOnce()
                     }
+                    pingManager.listen()
                 }
+                
                 
             }
         }

@@ -72,33 +72,37 @@ public class Ping : NSObject {
     public func startPinging() {
         self.isPinging = true
     }
-    var mainQueue = DispatchQueue.main
+    private static var pingQueue = DispatchQueue.init(label: "pingQueue")
+    private var sendQueue = Ping.pingQueue
+    private lazy var lisentQueue = DispatchQueue(label: "\(self).lisentQueue")
+   
     
     func Delegate(_ delegate:PingDelegate?) -> Ping{
         self.delegate = delegate
         return self
     }
     public func stop() {
-        mainQueue.async {
-            if self.isPinging,let stop = self.delegate?.stop{
-                self.isPinging = false
-                stop(self)
-            }
+        if self.isPinging,let stop = self.delegate?.stop{
+            self.isPinging = false
+            stop(self)
         }
     }
     
     public func send() {
-        sendPacket()
-        pingThreadCount += 1
+        sendQueue.async {[weak self] in
+            self?.sendPacket()
+        }
+        
     }
     public func listenOnce() {
-        listenPacket()
+        lisentQueue.async {[weak self] in
+            self?.listenPacket()
+        }
+        
         
     }
     deinit {
-        
-        Ping.pingThreadCount -= 1
-        
+      
         //        NSLog("PingCount:"+Ping.pingThreadCount.description)
     }
     let INET6_ADDRSTRLEN = 64
@@ -250,7 +254,6 @@ public class Ping : NSObject {
             self.delegate?.ping?(self, didFailWithError: NSError(domain: "", code: -1, userInfo: nil) as Error)
             return
         }
-        weak var weakSelf = self
         var err : Int
         var ss = [sockaddr_storage()]
         var addrLen : socklen_t
@@ -263,8 +266,13 @@ public class Ping : NSObject {
         
         let addrSockaddr = ss.withUnsafeMutableBytes{$0.baseAddress}.unsafelyUnwrapped.bindMemory(to: sockaddr.self, capacity: Int(addrLen))
         
-        
-        bytesRead = recvfrom(self.socketNum, buffer, kBufferSize, 0, addrSockaddr, &addrLen)
+        var tv : timeval = .init(tv_sec: __darwin_time_t(3), tv_usec: 0)
+        let value = setsockopt(self.socketNum, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size));
+        if value == 0{
+            bytesRead = recvfrom(self.socketNum, buffer, kBufferSize, 0, addrSockaddr, &addrLen)
+        }else{
+            bytesRead = -1
+        }
         err = 0;
         if bytesRead < 0 {
             err = -1;
@@ -302,18 +310,18 @@ public class Ping : NSObject {
                 //                NSUInteger seqNo = (NSUInteger)OSSwapBigToHostInt16(headerPointer->sequenceNumber);
                 let key = segNo.description
                 //                NSNumber *key = @(seqNo);
-                let pingResult =  self.pendingPings[key]?.copy()
+                
                 //                PingResult *pingResult = [(PingResult *)self.pendingPings[key] copy];
                 
-                if pingResult != nil{
+                if let pingResult =  sendQueue.sync(execute: {self.pendingPings[key]?.copy()}){
                     
                     if self.isValidPingResponsePacket(packet){
                         //override the source address (we might have sent to google.com and 172.123.213.192 replied)
-                        pingResult!.receiveDate = receiveDate
+                        pingResult.receiveDate = receiveDate
                         // IP can't be read from header for ICMPv6
                         if sin.sin_family == sa_family_t(AF_INET) {
                             
-                            pingResult?.host = Ping.sourceAddressInPacket(packet)
+                            pingResult.host = Ping.sourceAddressInPacket(packet)
                             
                             //set ttl from response (different servers may respond with different ttls)
                             let ipPtr : UnsafePointer<IPHeader>
@@ -321,30 +329,24 @@ public class Ping : NSObject {
                             if packet.count >= MemoryLayout<IPHeader>.size {
                                 
                                 ipPtr = packet.bytes.bindMemory(to: IPHeader.self, capacity: packet.count)
-                                pingResult?.ttl = UInt(ipPtr.pointee.timeToLive);
+                                pingResult.ttl = UInt(ipPtr.pointee.timeToLive);
                             }
                         }
                         
-                        pingResult?.pingStatus = .success
+                        pingResult.pingStatus = .success
                         
-                        mainQueue.async {
+                        sendQueue.async {[weak self] in
+                            guard let self = self else{return}
                             let timer = self.timeoutTimers[key]
                             timer?.invalidate()
                             self.timeoutTimers.removeValue(forKey: key)
-                            if let weakSelf = weakSelf{
-                                weakSelf.delegate?.ping?(weakSelf, didReceiveReplyWith: pingResult!)
-                            }
+                            self.delegate?.ping?(self, didReceiveReplyWith: pingResult)
                             
                         }
-                    }else {
-                        pingResult?.pingStatus = .fail
                         
-                        mainQueue.async {
-                            if let weakSelf = weakSelf{
-                                weakSelf.delegate?.ping?(weakSelf, didReceiveUnexpectedReplyWith: pingResult! )
-                            }
-                            
-                        }
+                    }else {
+                        pingResult.pingStatus = .fail
+                        delegate?.ping?(self, didReceiveUnexpectedReplyWith: pingResult)
                         
                     }
                 }
@@ -358,12 +360,7 @@ public class Ping : NSObject {
             }
             
             if self.isStopped{
-                mainQueue.async {
-                    if let weakSelf = weakSelf{
-                        weakSelf.delegate?.ping?(weakSelf, didFailWithError: NSError.init(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
-                    }
-                    
-                }
+                delegate?.ping?(self, didFailWithError: NSError.init(domain: NSPOSIXErrorDomain, code: err, userInfo: nil))
             }
             self.stop()
         }
@@ -454,7 +451,7 @@ public class Ping : NSObject {
                 
                 //we need to clean up our list of pending pings, and we do that after the timeout has elapsed (+ some grace period)
                 
-                mainQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
+                sendQueue.asyncAfter(deadline: DispatchTime.now() + (self.timeout + kPendingPingsCleanupGrace) * Double(NSEC_PER_SEC)) {
                     weakSelf?.pendingPings.removeValue(forKey: key)
                 }
                 
@@ -465,11 +462,11 @@ public class Ping : NSObject {
                     
                     guard let self = self else{return}
                     newPingResult.pingStatus = .fail
-                    self.mainQueue.async {
+                    self.sendQueue.async {
                         weakSelf?.delegate?.ping?(self, didTimeoutWith: pingResultCopy)
                         
                     }
-                    self.mainQueue.async {
+                    self.sendQueue.async {
                         weakSelf?.timeoutTimers.removeValue(forKey: key)
                     }
                     
@@ -480,7 +477,7 @@ public class Ping : NSObject {
                 self.timeoutTimers[key] = timeoutTimer
                 //keep a local ref to it
                 self.delegate?.ping?(self, didSendPingWith: pingResultCopy)
-                let hostAddress = self.hostAddress!
+                let hostAddress = self.hostAddress ?? .init()
                 bytesSent = sendto(self.socketNum, packet.bytes, packet.length, 0, hostAddress.bytes.bindMemory(to: sockaddr.self, capacity: hostAddress.count), socklen_t(hostAddress.count))
                 err = 0
                 if bytesSent < 0 {
@@ -533,7 +530,7 @@ public class Ping : NSObject {
         
         var streamError = CFStreamError()
         var success : Bool
-        let hostName = CFHostCreateWithName(nil,self.host! as CFString).autorelease()
+        let hostName = CFHostCreateWithName(nil,(self.host ?? "") as CFString).autorelease()
         let hostRef : CFHost? = hostName.takeUnretainedValue()
         
         
